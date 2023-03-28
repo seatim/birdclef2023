@@ -74,12 +74,12 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         magnitude = np.log(magnitude)
 
         if show_magnitude_spectrogram:
-            plt.imshow(magnitude, interpolation='nearest')
+            plt.imshow(magnitude, interpolation='nearest', origin='lower')
             plt.show()
 
         if save_magnitude_spectrogram:
             filename = f'{basename(path)}.mag{n_fft}.png'
-            plt.imsave(join(output_dir, filename), magnitude)
+            plt.imsave(join(output_dir, filename), magnitude, origin='lower')
 
     if show_phase_spectrogram or save_phase_spectrogram:
         phase = np.angle(phase)
@@ -87,12 +87,12 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         phase *= (1 / np.max(phase))
 
         if show_phase_spectrogram:
-            plt.imshow(phase, interpolation='nearest')
+            plt.imshow(phase, interpolation='nearest', origin='lower')
             plt.show()
 
         if save_phase_spectrogram:
             filename = f'{basename(path)}.phase{n_fft}.png'
-            plt.imsave(join(output_dir, filename), phase)
+            plt.imsave(join(output_dir, filename), phase, origin='lower')
 
     M = librosa.feature.melspectrogram(S=np.abs(D), sr=sr, n_mels=n_mels)
     # print('M.shape', M.shape)
@@ -104,12 +104,12 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         mel = np.log(mel)
 
         if show_mel_spectrogram:
-            plt.imshow(mel, interpolation='nearest')
+            plt.imshow(mel, interpolation='nearest', origin='lower')
             plt.show()
 
         if save_mel_spectrogram:
             filename = f'{basename(path)}.mel{n_fft}_{n_mels}.png'
-            plt.imsave(join(output_dir, filename), mel)
+            plt.imsave(join(output_dir, filename), mel, origin='lower')
 
 
 if __name__ == '__main__':
