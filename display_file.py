@@ -14,6 +14,14 @@ MAX_N_MELS = 232
 DEFAULT_OUTPUT_DIR = '.'
 
 
+def show_or_save(show, save, array, dir_, filename):
+    if show:
+        plt.imshow(array, interpolation='nearest', origin='lower')
+        plt.show()
+    if save:
+        plt.imsave(join(dir_, filename), array, origin='lower')
+
+
 @click.command()
 @click.argument('path', type=click.Path())
 @click.option('-w', '--show-waveform', is_flag=True)
@@ -73,26 +81,16 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         magnitude *= (1 / np.max(magnitude))
         magnitude = np.log(magnitude)
 
-        if show_magnitude_spectrogram:
-            plt.imshow(magnitude, interpolation='nearest', origin='lower')
-            plt.show()
-
-        if save_magnitude_spectrogram:
-            filename = f'{basename(path)}.mag{n_fft}.png'
-            plt.imsave(join(output_dir, filename), magnitude, origin='lower')
+        show_or_save(show_magnitude_spectrogram, save_magnitude_spectrogram,
+                     magnitude, output_dir, f'{basename(path)}.mag{n_fft}.png')
 
     if show_phase_spectrogram or save_phase_spectrogram:
         phase = np.angle(phase)
         phase -= np.min(phase)
         phase *= (1 / np.max(phase))
 
-        if show_phase_spectrogram:
-            plt.imshow(phase, interpolation='nearest', origin='lower')
-            plt.show()
-
-        if save_phase_spectrogram:
-            filename = f'{basename(path)}.phase{n_fft}.png'
-            plt.imsave(join(output_dir, filename), phase, origin='lower')
+        show_or_save(show_phase_spectrogram, save_phase_spectrogram, phase,
+                     output_dir, f'{basename(path)}.phase{n_fft}.png')
 
     M = librosa.feature.melspectrogram(S=np.abs(D), sr=sr, n_mels=n_mels)
     # print('M.shape', M.shape)
@@ -103,13 +101,8 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         mel += 1e-9
         mel = np.log(mel)
 
-        if show_mel_spectrogram:
-            plt.imshow(mel, interpolation='nearest', origin='lower')
-            plt.show()
-
-        if save_mel_spectrogram:
-            filename = f'{basename(path)}.mel{n_fft}_{n_mels}.png'
-            plt.imsave(join(output_dir, filename), mel, origin='lower')
+        show_or_save(show_mel_spectrogram, save_mel_spectrogram, mel,
+                     output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
 
 
 if __name__ == '__main__':
