@@ -1,4 +1,5 @@
 
+import re
 import sys
 
 from os.path import basename, join
@@ -7,6 +8,10 @@ import click
 import librosa
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
+from skimage import exposure
+from tabulate import tabulate
 
 MIN_N_FFT = 128
 MIN_N_MELS = 128
@@ -20,6 +25,85 @@ def show_or_save(show, save, array, dir_, filename):
         plt.show()
     if save:
         plt.imsave(join(dir_, filename), array, origin='lower')
+
+
+def center_median(x):
+    assert 0 <= np.min(x) <= 1, np.min(x)
+    assert 0 <= np.max(x) <= 1, np.max(x)
+    median = np.median(x)
+    return np.where(x < median, x*(0.5/median), 0.5+(x-median)*(0.5/(1-median)))
+
+
+def clip_tails(x, n_std=3):
+    assert 0 <= np.min(x) <= 1, np.min(x)
+    assert 0 <= np.max(x) <= 1, np.max(x)
+    median = np.median(x)
+    std = np.std(x)
+    lo = median - n_std*std
+    hi = median + n_std*std
+    assert lo <= hi, (median, std, n_std)
+    x = np.where(x < lo, lo, np.where(x > hi, hi, x))
+    x -= np.min(x)
+    x *= (1/np.max(x))
+    return x
+
+
+def histeq(array, dir_, filename, do_show_hist=False):
+    print()
+    print('histogram equalization')
+    print()
+
+    stats = []
+
+    def showhist(array, label):
+        values = pd.Series(array.flatten())
+        if not (0 <= min(values) <= 1):
+            print(f'W: min for {label} is {min(values)}')
+        if not (0 <= max(values) <= 1):
+            print(f'W: max for {label} is {max(values)}')
+
+        quantiles = np.quantile(values, (0.25, 0.5, 0.75))
+        stats.append((label, min(values), *quantiles, max(values),
+                      np.std(values)))
+        if do_show_hist:
+            values.hist(bins=20)
+            plt.show()
+
+    showhist(array, 'original')
+
+    # Median centering
+    centmed = center_median(array)
+    showhist(centmed, 'center median')
+    plt.imsave(join(dir_, re.sub('.png', '.centmed.png', filename)), centmed,
+               origin='lower')
+
+    # Tail clipping
+    clipped = clip_tails(array)
+    showhist(clipped, 'clip tails')
+    plt.imsave(join(dir_, re.sub('.png', '.cliptails.png', filename)), clipped,
+               origin='lower')
+
+    # Contrast stretching
+    p2, p98 = np.percentile(array, (2, 98))
+    img_rescale = exposure.rescale_intensity(array, in_range=(p2, p98))
+    plt.imsave(join(dir_, re.sub('.png', '.rescale.png', filename)),
+               img_rescale, origin='lower')
+    showhist(img_rescale, 'rescale')
+
+    # Equalization
+    img_eq = exposure.equalize_hist(array)
+    plt.imsave(join(dir_, re.sub('.png', '.histeq.png', filename)), img_eq,
+               origin='lower')
+    showhist(img_eq, 'histeq')
+
+    # Adaptive Equalization
+    img_adapteq = exposure.equalize_adapthist(array, clip_limit=0.03)
+    plt.imsave(join(dir_, re.sub('.png', '.adapteq.png', filename)),
+               img_adapteq, origin='lower')
+    showhist(img_adapteq, 'adapteq')
+
+    print(tabulate(stats, headers='label/min/25%/50%/75%/max/std'.split('/')))
+    print()
 
 
 @click.command()
@@ -100,9 +184,12 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         mel = M * (1 / np.max(M))
         mel += 1e-9
         mel = np.log(mel)
+        mel -= np.min(mel)
+        mel *= (1 / np.max(mel))
 
         show_or_save(show_mel_spectrogram, save_mel_spectrogram, mel,
                      output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
+        histeq(mel, output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
 
 
 if __name__ == '__main__':
