@@ -5,7 +5,6 @@ from os.path import dirname, exists, join
 
 import click
 import librosa
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import soundfile
@@ -90,7 +89,8 @@ def check_image_cache(audio_dir, image_cache_dir, check_load_images):
         if not exists(img_path):
             print(f'I: rendering image for {path}...')
             img = image_from_audio(str(path))
-            plt.imsave(img_path, img, origin='lower')
+            img = np.flip(img, axis=0)
+            Image.fromarray(np.uint8(255*img), 'L').save(img_path, 'PNG')
             assert exists(img_path), img_path
         else:
             result = check_image(str(path), img_path, check_load_images)
