@@ -16,6 +16,7 @@ from tabulate import tabulate
 MIN_N_FFT = 128
 MIN_N_MELS = 128
 MAX_N_MELS = 232
+HOP_FACTOR = 2
 DEFAULT_OUTPUT_DIR = '.'
 
 
@@ -153,10 +154,11 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         librosa.display.waveshow(audio, sr=sr)
         plt.show()
 
+    hop_length = n_fft // HOP_FACTOR
     print('Num. samples / FFT frame:', n_fft)
-    print('Frame duration:', n_fft / sr)
-    print('Num. frames:', len(audio) / n_fft)
-    D = librosa.stft(audio, n_fft=n_fft, hop_length=n_fft // 2)
+    print('Frame duration (seconds):', n_fft / sr)
+    print('Num. frames:', 1 + (len(audio) + hop_length - 1) // hop_length)
+    D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
     # print('D.shape', D.shape)
     magnitude, phase = librosa.magphase(D)
     assert np.min(magnitude) >= 0, np.min(magnitude)
@@ -177,7 +179,7 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
                      output_dir, f'{basename(path)}.phase{n_fft}.png')
 
     M = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=n_fft // 2)
+        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length)
     # print('M.shape', M.shape)
     assert np.min(M) >= 0, np.min(M)
 
