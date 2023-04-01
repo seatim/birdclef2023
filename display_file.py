@@ -156,7 +156,7 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
     print('Num. samples / FFT frame:', n_fft)
     print('Frame duration:', n_fft / sr)
     print('Num. frames:', len(audio) / n_fft)
-    D = librosa.stft(audio, n_fft=n_fft)
+    D = librosa.stft(audio, n_fft=n_fft, hop_length=n_fft // 2)
     # print('D.shape', D.shape)
     magnitude, phase = librosa.magphase(D)
     assert np.min(magnitude) >= 0, np.min(magnitude)
@@ -176,7 +176,8 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
         show_or_save(show_phase_spectrogram, save_phase_spectrogram, phase,
                      output_dir, f'{basename(path)}.phase{n_fft}.png')
 
-    M = librosa.feature.melspectrogram(S=np.abs(D), sr=sr, n_mels=n_mels)
+    M = librosa.feature.melspectrogram(
+        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=n_fft // 2)
     # print('M.shape', M.shape)
     assert np.min(M) >= 0, np.min(M)
 
