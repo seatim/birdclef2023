@@ -19,6 +19,7 @@ from PIL import Image, UnidentifiedImageError
 SAMPLE_RATE = 32000
 N_MELS = 224
 N_FFT = 1024
+HOP_LENGTH = N_FFT // 2
 AUDIO_DIR = 'data/train_audio'
 IMAGE_CACHE_DIR = 'data/image_cache'
 
@@ -30,7 +31,7 @@ def image_from_audio(path):
     audio, sr = librosa.load(path, sr=None)
     assert sr == SAMPLE_RATE, (path, sr)
     M = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=N_MELS, n_fft=N_FFT)
+        y=audio, sr=sr, n_mels=N_MELS, n_fft=N_FFT, hop_length=HOP_LENGTH)
     M *= (1 / np.max(M))
     M += 1e-9
     M = np.log(M)
@@ -54,7 +55,7 @@ def get_image_data(path):
 
 def check_image(audio_path, image_path, check_load_image):
     audio_len = soundfile.info(audio_path).frames
-    expected_img_width = 1 + (2 * audio_len // N_FFT)
+    expected_img_width = 1 + audio_len // HOP_LENGTH
 
     try:
         img_shape = get_image_info(image_path).size
