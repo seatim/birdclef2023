@@ -157,7 +157,7 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
     hop_length = n_fft // HOP_FACTOR
     print('Num. samples / FFT frame:', n_fft)
     print('Frame duration (seconds):', n_fft / sr)
-    print('Num. frames:', 1 + len(audio) // hop_length
+    print('Num. frames:', 1 + len(audio) // hop_length)
     D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
     # print('D.shape', D.shape)
     magnitude, phase = librosa.magphase(D)
