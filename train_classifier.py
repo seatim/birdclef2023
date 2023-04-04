@@ -20,7 +20,7 @@ N_MELS = 224
 N_FFT = 1024
 HOP_LENGTH = N_FFT // 2
 AUDIO_DIR = 'data/train_audio'
-IMAGE_CACHE_DIR = 'data/image_cache'
+DEFAULT_IMAGES_DIR = 'data/train_images'
 
 # for reproducibility
 RANDOM_SEED = 11462  # output of random.randint(0, 99999)
@@ -121,14 +121,16 @@ def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
 
 @click.command()
 @click.option('-c', '--check-load-images', is_flag=True)
-def main(check_load_images):
+@click.option('-i', '--images-dir', default=DEFAULT_IMAGES_DIR,
+              show_default=True)
+def main(check_load_images, images_dir):
     tmd = pd.read_csv('data/train_metadata.csv')
     classes = np.unique(tmd.primary_label)
 
-    count = check_image_cache(AUDIO_DIR, IMAGE_CACHE_DIR, check_load_images)
+    count = check_image_cache(AUDIO_DIR, images_dir, check_load_images)
     print(f'I: confirmed {count} files in image cache')
 
-    dls = get_data_loader(IMAGE_CACHE_DIR, classes)
+    dls = get_data_loader(images_dir, classes)
     arch = 'efficientnet_b0'
     learn = vision_learner(dls, arch, metrics=error_rate).to_fp16()
 
