@@ -1,3 +1,4 @@
 /.*.[0-9]
 /notes
 /data/
+__pycache__/

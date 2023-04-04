@@ -4,7 +4,6 @@ import os
 from os.path import dirname, exists, join
 
 import click
-import librosa
 import numpy as np
 import pandas as pd
 import soundfile
@@ -15,28 +14,16 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                get_image_files, parent_label)
 from PIL import Image, UnidentifiedImageError
 
+from adak.transform import (DEFAULT_N_MELS as N_MELS,
+                            DEFAULT_HOP_LENGTH as HOP_LENGTH,
+                            image_from_audio)
+
 SAMPLE_RATE = 32000
-N_MELS = 224
-N_FFT = 1024
-HOP_LENGTH = N_FFT // 2
 AUDIO_DIR = 'data/train_audio'
 DEFAULT_IMAGES_DIR = 'data/train_images'
 
 # for reproducibility
 RANDOM_SEED = 11462  # output of random.randint(0, 99999)
-
-
-def image_from_audio(path):
-    audio, sr = librosa.load(path, sr=None)
-    assert sr == SAMPLE_RATE, (path, sr)
-    M = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=N_MELS, n_fft=N_FFT, hop_length=HOP_LENGTH)
-    M *= (1 / np.max(M))
-    M += 1e-9
-    M = np.log(M)
-    M -= np.min(M)
-    M *= (1 / np.max(M))
-    return M
 
 
 def get_image_info(path):
@@ -88,7 +75,7 @@ def check_image_cache(audio_dir, image_cache_dir, check_load_images):
 
         if not exists(img_path):
             print(f'I: rendering image for {path}...')
-            img = image_from_audio(str(path))
+            img = image_from_audio(str(path), assert_sr=SAMPLE_RATE)
             img = np.flip(img, axis=0)
             Image.fromarray(np.uint8(255*img), 'L').save(img_path, 'PNG')
             assert exists(img_path), img_path
