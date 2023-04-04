@@ -1,6 +1,7 @@
 
 import librosa
 import numpy as np
+import soundfile
 
 DEFAULT_N_MELS = 224
 DEFAULT_N_FFT = 1024
@@ -12,7 +13,7 @@ def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
                      hop_length=DEFAULT_HOP_LENGTH, assert_sr=None):
     """Generate mel spectrogram of audio file.
     """
-    audio, sr = librosa.load(path, sr=None)
+    audio, sr = soundfile.read(path)
 
     if assert_sr:
         assert sr == assert_sr, (path, sr)
