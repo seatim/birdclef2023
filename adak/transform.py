@@ -5,6 +5,7 @@ import numpy as np
 DEFAULT_N_MELS = 224
 DEFAULT_N_FFT = 1024
 DEFAULT_HOP_LENGTH = DEFAULT_N_FFT // 2
+DEFAULT_SAMPLE_RATE = 32000
 
 
 def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
@@ -25,3 +26,8 @@ def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
     M -= np.min(M)
     M *= (1 / np.max(M))
     return M
+
+
+def image_width(audio_play_time, sr=DEFAULT_SAMPLE_RATE,
+                hop_length=DEFAULT_HOP_LENGTH):
+    return 1 + int(audio_play_time * sr) // hop_length
