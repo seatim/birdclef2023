@@ -11,7 +11,7 @@ import soundfile
 
 from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
-                               CategoryBlock, PILImage, get_files,
+                               CategoryBlock, PILImageBW, get_files,
                                get_image_files, parent_label)
 from PIL import Image, UnidentifiedImageError
 
@@ -103,7 +103,7 @@ def check_image_cache(audio_dir, image_cache_dir, check_load_images):
 
 
 def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
-                    img_cls=PILImage):
+                    img_cls=PILImageBW):
     splitter = RandomSplitter(valid_pct, seed=seed)
 
     # TODO
