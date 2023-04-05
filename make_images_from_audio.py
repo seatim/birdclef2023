@@ -28,7 +28,7 @@ def make_images_for_class(label, images_dir, max_examples):
     for name in os.listdir(cls_dir):
         images = images_from_audio(
             join(cls_dir, name), assert_sr=DEFAULT_SAMPLE_RATE)
-        # assert len(images), (label, name)
+        assert len(images), (label, name)
 
         if max_examples:
             images = images[:max_examples - img_count]
@@ -41,7 +41,7 @@ def make_images_for_class(label, images_dir, max_examples):
         if max_examples and img_count >= max_examples:
             break
 
-    # assert 0 < img_count <= max_examples, label
+    assert 0 < img_count <= max_examples, label
     return img_count
 
 
