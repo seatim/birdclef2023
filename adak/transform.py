@@ -32,3 +32,28 @@ def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
 def image_width(audio_play_time, sr=DEFAULT_SAMPLE_RATE,
                 hop_length=DEFAULT_HOP_LENGTH):
     return 1 + int(audio_play_time * sr) // hop_length
+
+
+def images_from_audio(path, max_play_time=10., pad_remainder=True, **kwargs):
+    image = image_from_audio(path, **kwargs)
+
+    try:
+        kwargs['sr'] = kwargs.pop('assert_sr')
+    except KeyError:
+        pass
+
+    max_image_width = image_width(max_play_time, **kwargs)
+
+    remainder = image.shape[1] % max_image_width
+    if remainder and pad_remainder:
+        image_height = kwargs.get('n_mels', DEFAULT_N_MELS)
+        pad_len = max_image_width - remainder
+        image = np.hstack([image, np.zeros((image_height, pad_len))])
+        assert image.shape[1] % max_image_width == 0
+    else:
+        # NB: remainder is dropped in this case
+        pass
+
+    n_images = image.shape[1] // max_image_width
+    return [image[:, k:k+max_image_width]
+            for k in range(0, max_image_width * n_images, max_image_width)]
