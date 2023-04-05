@@ -2,6 +2,7 @@
 import os
 
 from collections import defaultdict
+from datetime import datetime
 from os.path import join
 
 import click
@@ -82,7 +83,8 @@ def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
 @click.option('-c', '--check-load-images', is_flag=True)
 @click.option('-i', '--images-dir', default=DEFAULT_IMAGES_DIR,
               show_default=True)
-def main(check_load_images, images_dir):
+@click.option('-e', '--epochs', default=5, show_default=True)
+def main(check_load_images, images_dir, epochs):
     tmd = pd.read_csv('data/train_metadata.csv')
     classes = np.unique(tmd.primary_label)
 
@@ -95,6 +97,15 @@ def main(check_load_images, images_dir):
     dls = get_data_loader(images_dir, classes)
     arch = 'efficientnet_b0'
     learn = vision_learner(dls, arch, metrics=error_rate).to_fp16()
+
+    # TODO: optimize learning rate
+    learn.fine_tune(epochs, 0.01)
+
+    timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
+    model_filename = f'birdclef-model-{timestamp}.pkl'
+    learn.save(model_filename)
+    learn.export(model_filename)
+    print(f'saved and exported model to "{model_filename}"')
 
 
 if __name__ == '__main__':
