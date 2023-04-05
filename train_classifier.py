@@ -1,26 +1,23 @@
 
 import os
 
-from os.path import dirname, exists, join
+from collections import defaultdict
+from os.path import join
 
 import click
 import numpy as np
 import pandas as pd
-import soundfile
 
 from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
-                               CategoryBlock, PILImageBW, get_files,
-                               get_image_files, parent_label)
+                               CategoryBlock, PILImageBW,
+                               get_image_files, parent_label, Resize,
+                               Brightness, Contrast)
 from PIL import Image, UnidentifiedImageError
 
-from adak.transform import (DEFAULT_N_MELS as N_MELS,
-                            DEFAULT_HOP_LENGTH as HOP_LENGTH,
-                            image_from_audio)
+from adak.transform import DEFAULT_N_MELS as N_MELS
 
-SAMPLE_RATE = 32000
-AUDIO_DIR = 'data/train_audio'
-DEFAULT_IMAGES_DIR = 'data/train_images'
+DEFAULT_IMAGES_DIR = 'data/train_images.narrow.all'
 
 # for reproducibility
 RANDOM_SEED = 11462  # output of random.randint(0, 99999)
@@ -39,10 +36,7 @@ def get_image_data(path):
     return data
 
 
-def check_image(audio_path, image_path, check_load_image):
-    audio_len = soundfile.info(audio_path).frames
-    expected_img_width = 1 + audio_len // HOP_LENGTH
-
+def check_image(image_path, check_load_image):
     try:
         img_shape = get_image_info(image_path).size
     except UnidentifiedImageError as e:
@@ -58,45 +52,23 @@ def check_image(audio_path, image_path, check_load_image):
     if img_shape[1] != N_MELS:
         return f'image height != {N_MELS}: {image_path}'
 
-    if img_shape[0] != expected_img_width:
-        return f'image width != {expected_img_width}: {image_path}'
 
+def check_images(images_dir, classes, check_load_images):
+    class_counts = defaultdict(int)
 
-def check_image_cache(audio_dir, image_cache_dir, check_load_images):
-    if not exists(image_cache_dir):
-        os.mkdir(image_cache_dir)
+    for label in classes:
+        for name in os.listdir(join(images_dir, label)):
+            check_image(join(images_dir, label, name), check_load_images)
+            class_counts[label] += 1
 
-    count = 0
-    for path in get_files(audio_dir, '.ogg'):
-        classname, filename = str(path).split('/')[-2:]
-        img_path = join(image_cache_dir, classname, filename + '.png')
-
-        os.makedirs(dirname(img_path), exist_ok=True)
-
-        if not exists(img_path):
-            print(f'I: rendering image for {path}...')
-            img = image_from_audio(str(path), assert_sr=SAMPLE_RATE)
-            img = np.flip(img, axis=0)
-            Image.fromarray(np.uint8(255*img), 'L').save(img_path, 'PNG')
-            assert exists(img_path), img_path
-        else:
-            result = check_image(str(path), img_path, check_load_images)
-            if result:
-                print(f'W: {result}')
-
-        count += 1
-
-    return count
+    return class_counts
 
 
 def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
                     img_cls=PILImageBW):
     splitter = RandomSplitter(valid_pct, seed=seed)
-
-    # TODO
-    item_tfms = None
-    batch_tfms = None
-
+    item_tfms = Resize(N_MELS)
+    batch_tfms = [Brightness(), Contrast()]
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
                        splitter=splitter,
@@ -114,8 +86,11 @@ def main(check_load_images, images_dir):
     tmd = pd.read_csv('data/train_metadata.csv')
     classes = np.unique(tmd.primary_label)
 
-    count = check_image_cache(AUDIO_DIR, images_dir, check_load_images)
-    print(f'I: confirmed {count} files in image cache')
+    class_counts = check_images(images_dir, classes, check_load_images)
+    values = class_counts.values()
+    print(f'I: class count stats (min/mean/max):', min(values), '/',
+          '%.1f' % np.mean(list(values)), '/', max(values))
+    print(f'I: training on {sum(values)} image files')
 
     dls = get_data_loader(images_dir, classes)
     arch = 'efficientnet_b0'
