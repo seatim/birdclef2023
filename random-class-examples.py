@@ -24,7 +24,7 @@ def main(data_dir, verbose):
 
     for k, (name, df) in enumerate(tmd.groupby('primary_label')):
         instance = random.choice(df.index)
-        print(f'{k}. ({name}) {df.loc[instance].filename}')
+        print(f'{df.loc[instance].filename}')
 
 
 if __name__ == '__main__':
