@@ -41,7 +41,7 @@ def make_images_for_class(label, images_dir, max_examples):
         if max_examples and img_count >= max_examples:
             break
 
-    assert 0 < img_count <= max_examples, label
+    assert 0 < img_count <= (max_examples or img_count), label
     return img_count
 
 
