@@ -7,6 +7,7 @@ DEFAULT_N_MELS = 224
 DEFAULT_N_FFT = 1024
 DEFAULT_HOP_LENGTH = DEFAULT_N_FFT // 2
 DEFAULT_SAMPLE_RATE = 32000
+DEFAULT_FRAME_DURATION = 10.
 
 
 def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
@@ -34,7 +35,8 @@ def image_width(audio_play_time, sr=DEFAULT_SAMPLE_RATE,
     return 1 + int(audio_play_time * sr) // hop_length
 
 
-def images_from_audio(path, frame_duration=10., pad_remainder=True, **kwargs):
+def images_from_audio(path, frame_duration=DEFAULT_FRAME_DURATION,
+                      pad_remainder=True, **kwargs):
     image = image_from_audio(path, **kwargs)
 
     try:
