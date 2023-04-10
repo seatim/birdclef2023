@@ -35,12 +35,12 @@ class Test_image_from_audio(MaskWarnings):
 
 class Test_images_from_audio(MaskWarnings):
     @parameterized.expand(((3,), (5,), (11.1,)))
-    def test1(self, max_play_time):
-        imgs = np.array(images_from_audio(TEST_AUDIO_PATH, max_play_time))
+    def test1(self, frame_duration):
+        imgs = np.array(images_from_audio(TEST_AUDIO_PATH, frame_duration))
 
         orig_img_width = image_width(TEST_AUDIO_PLAY_TIME)
-        sub_img_width = image_width(max_play_time)
-        expected_n_imgs = math.ceil(orig_img_width / sub_img_width)
+        frame_img_width = image_width(frame_duration)
+        expected_n_imgs = math.ceil(orig_img_width / frame_img_width)
 
         self.assertEqual(imgs.shape,
-            (expected_n_imgs, DEFAULT_N_MELS, sub_img_width))
+            (expected_n_imgs, DEFAULT_N_MELS, frame_img_width))

@@ -34,7 +34,7 @@ def image_width(audio_play_time, sr=DEFAULT_SAMPLE_RATE,
     return 1 + int(audio_play_time * sr) // hop_length
 
 
-def images_from_audio(path, max_play_time=10., pad_remainder=True, **kwargs):
+def images_from_audio(path, frame_duration=10., pad_remainder=True, **kwargs):
     image = image_from_audio(path, **kwargs)
 
     try:
@@ -42,7 +42,7 @@ def images_from_audio(path, max_play_time=10., pad_remainder=True, **kwargs):
     except KeyError:
         pass
 
-    max_image_width = image_width(max_play_time, **kwargs)
+    max_image_width = image_width(frame_duration, **kwargs)
 
     remainder = image.shape[1] % max_image_width
     if remainder and pad_remainder:
