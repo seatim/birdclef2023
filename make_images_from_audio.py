@@ -13,7 +13,6 @@ from adak.transform import images_from_audio, DEFAULT_SAMPLE_RATE
 
 DEFAULT_AUDIO_DIR = 'data/train_audio'
 DEFAULT_IMAGES_DIR = 'data/train_images'
-MAX_PLAY_TIME = 10.
 
 
 def save_image(img, path):
