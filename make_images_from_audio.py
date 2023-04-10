@@ -11,7 +11,7 @@ from PIL import Image
 
 from adak.transform import images_from_audio, DEFAULT_SAMPLE_RATE
 
-AUDIO_DIR = 'data/train_audio'
+DEFAULT_AUDIO_DIR = 'data/train_audio'
 DEFAULT_IMAGES_DIR = 'data/train_images'
 MAX_PLAY_TIME = 10.
 
@@ -21,8 +21,8 @@ def save_image(img, path):
     Image.fromarray(np.uint8(255*img), 'L').save(path, 'PNG')
 
 
-def make_images_for_class(label, images_dir, max_examples):
-    cls_dir = join(AUDIO_DIR, label)
+def make_images_for_class(label, images_dir, audio_dir, max_examples):
+    cls_dir = join(audio_dir, label)
     img_count = 0
 
     for name in os.listdir(cls_dir):
@@ -46,15 +46,19 @@ def make_images_for_class(label, images_dir, max_examples):
 
 
 @click.command()
+@click.option('-a', '--audio-dir', default=DEFAULT_AUDIO_DIR,
+              show_default=True)
 @click.option('-i', '--images-dir', default=DEFAULT_IMAGES_DIR,
               show_default=True)
 @click.option('-m', '--max-examples-per-class', 'max_examples', type=int)
-def main(images_dir, max_examples):
+def main(audio_dir, images_dir, max_examples):
     if max_examples is not None and max_examples < 1:
         sys.exit('E: max_examples must be > 0')
 
-    class_counts = {cls: make_images_for_class(cls, images_dir, max_examples)
-                    for cls in os.listdir(AUDIO_DIR)}
+    class_counts = {
+        cls: make_images_for_class(cls, images_dir, audio_dir, max_examples)
+        for cls in os.listdir(audio_dir)
+    }
 
     values = class_counts.values()
     print(f'class count stats (min/mean/max):', min(values), '/',
