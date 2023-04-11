@@ -24,7 +24,11 @@ def main(data_dir, verbose):
 
     for label, df in tmd.groupby('primary_label'):
         instance = random.choice(df.index)
-        print(f'{df.loc[instance].filename}')
+        row = df.loc[instance]
+        if label not in row.filename:
+            print(join(label, row.filename))
+        else:
+            print(row.filename)
 
 
 if __name__ == '__main__':
