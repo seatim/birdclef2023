@@ -10,6 +10,10 @@ DEFAULT_SAMPLE_RATE = 32000
 DEFAULT_FRAME_DURATION = 10.
 
 
+class EmptyImage(Exception):
+    pass
+
+
 def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
                      hop_length=DEFAULT_HOP_LENGTH, assert_sr=None):
     """Generate mel spectrogram of audio file.
@@ -21,6 +25,9 @@ def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
 
     M = librosa.feature.melspectrogram(
         y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length)
+
+    if not np.max(M):
+        raise EmptyImage
 
     M *= (1 / np.max(M))
     M += 1e-9

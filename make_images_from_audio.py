@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 
 from adak.transform import (images_from_audio, DEFAULT_SAMPLE_RATE,
-                            DEFAULT_FRAME_DURATION)
+                            DEFAULT_FRAME_DURATION, EmptyImage)
 
 DEFAULT_AUDIO_DIR = 'data/train_audio'
 DEFAULT_IMAGES_DIR = 'data/train_images'
@@ -27,9 +27,14 @@ def make_images_for_class(label, images_dir, audio_dir, max_examples,
     img_count = 0
 
     for name in os.listdir(cls_dir):
-        images = images_from_audio(
-            join(cls_dir, name), assert_sr=DEFAULT_SAMPLE_RATE,
-            frame_duration=frame_duration)
+        path = join(cls_dir, name)
+        try:
+            images = images_from_audio(
+                path, assert_sr=DEFAULT_SAMPLE_RATE,
+                frame_duration=frame_duration)
+        except EmptyImage:
+            print(f'I: empty image, skipping: {path}')
+            continue
         assert len(images), (label, name)
 
         if max_examples:
