@@ -22,7 +22,7 @@ def main(data_dir, verbose):
               '%.1f' % class_counts.mean(), '/', class_counts.max(), '/',
               '%.1f' % class_counts.std())
 
-    for k, (name, df) in enumerate(tmd.groupby('primary_label')):
+    for label, df in tmd.groupby('primary_label'):
         instance = random.choice(df.index)
         print(f'{df.loc[instance].filename}')
 
