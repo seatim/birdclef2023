@@ -10,14 +10,16 @@ from fastai.vision.all import load_learner, parent_label, Resize
 
 from adak.transform import images_from_audio, DEFAULT_N_MELS as N_MELS
 
-AUDIO_DIR = 'data/train_audio'
+DEFAULT_AUDIO_DIR = 'data/train_audio'
 FRAME_TIME = 5.
 
 
 @click.command()
 @click.argument('model_path')
+@click.option('-a', '--audio-dir', default=DEFAULT_AUDIO_DIR,
+              show_default=True)
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, verbose):
+def main(model_path, audio_dir, verbose):
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
     resize = Resize(N_MELS)
@@ -27,7 +29,7 @@ def main(model_path, verbose):
     for line in sys.stdin:
         path = line.strip()
         if not exists(path):
-            path = join(AUDIO_DIR, path)
+            path = join(audio_dir, path)
         images = images_from_audio(path, FRAME_TIME)
 
         # FIXME add flip and scale options to load function
