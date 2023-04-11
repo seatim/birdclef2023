@@ -85,7 +85,7 @@ def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
               show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
 def main(check_load_images, images_dir, epochs):
-    tmd = pd.read_csv('data/train_metadata.csv')
+    tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
 
     class_counts = check_images(images_dir, classes, check_load_images)
