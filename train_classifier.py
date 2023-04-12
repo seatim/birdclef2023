@@ -22,7 +22,7 @@ from PIL import Image, UnidentifiedImageError
 
 from adak.transform import DEFAULT_N_MELS as N_MELS
 
-DEFAULT_IMAGES_DIR = 'data/train_images.narrow.all'
+DEFAULT_IMAGES_DIR = 'data/train_images'
 
 # for reproducibility
 RANDOM_SEED = 11462  # output of random.randint(0, 99999)
