@@ -59,13 +59,18 @@ def check_image(cfg, image_path, check_load_image):
         return f'image height != {cfg.n_mels}: {image_path}'
 
 
-def check_images(cfg, classes, check_load_images):
+def check_images(cfg, classes, check_load_images, exit_on_error):
     class_counts = defaultdict(int)
 
     for label in classes:
         for name in os.listdir(join(cfg.images_dir, label)):
             img_path = join(cfg.images_dir, label, name)
-            check_image(cfg, img_path, check_load_images)
+            error = check_image(cfg, img_path, check_load_images)
+            if error:
+                if exit_on_error:
+                    sys.exit(f'E: {error}')
+                else:
+                    print(f'W: {error}')
             class_counts[label] += 1
 
     return class_counts
@@ -86,10 +91,11 @@ def get_data_loader(path, vocab, cfg, img_cls=PILImageBW):
 
 @click.command()
 @click.option('-c', '--check-load-images', is_flag=True)
+@click.option('-b', '--exit-on-error', is_flag=True)
 @click.option('-i', '--images-dir', default=TrainConfig.images_dir,
               show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
-def main(check_load_images, images_dir, epochs):
+def main(check_load_images, exit_on_error, images_dir, epochs):
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
                  f'images directory with make_images_from_audio.py.')
@@ -99,7 +105,8 @@ def main(check_load_images, images_dir, epochs):
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
 
-    class_counts = check_images(config, classes, check_load_images)
+    class_counts = check_images(
+        config, classes, check_load_images, exit_on_error)
     values = class_counts.values()
     print(f'I: class count stats (min/mean/max):', min(values), '/',
           '%.1f' % np.mean(list(values)), '/', max(values))
