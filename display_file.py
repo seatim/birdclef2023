@@ -13,6 +13,8 @@ import pandas as pd
 from skimage import exposure
 from tabulate import tabulate
 
+from adak.config import TrainConfig
+
 MIN_N_FFT = 128
 MIN_N_MELS = 128
 MAX_N_MELS = 232
@@ -109,9 +111,9 @@ def histeq(array, dir_, filename, do_show_hist=False):
 @click.command()
 @click.argument('path', type=click.Path())
 @click.option('-w', '--show-waveform', is_flag=True)
-@click.option('-n', '--fft-frame-size', 'n_fft', type=int, default=2048,
+@click.option('-n', '--fft-frame-size', 'n_fft', default=TrainConfig.n_fft,
               show_default=True)
-@click.option('-m', '--n-mels', type=int, default=128, show_default=True)
+@click.option('-m', '--n-mels', default=TrainConfig.n_mels, show_default=True)
 @click.option('-l', '--limit-audio-length', type=float)
 @click.option('-x', '--show-magnitude-spectrogram', is_flag=True)
 @click.option('-X', '--save-magnitude-spectrogram', is_flag=True)
