@@ -1,5 +1,7 @@
 
 import os
+import re
+import shutil
 import sys
 
 from os.path import join
@@ -21,10 +23,11 @@ def save_image(img, path):
     Image.fromarray(np.uint8(255*img), 'L').save(path, 'PNG')
 
 
-def make_images_for_class(label, images_dir, audio_dir, max_examples,
-                          frame_duration=DEFAULT_FRAME_DURATION):
+def make_images_for_class(label, images_dir, audio_dir, min_examples,
+                          max_examples, frame_duration=DEFAULT_FRAME_DURATION):
     cls_dir = join(audio_dir, label)
     img_count = 0
+    img_paths = []
 
     for name in os.listdir(cls_dir):
         path = join(cls_dir, name)
@@ -42,13 +45,23 @@ def make_images_for_class(label, images_dir, audio_dir, max_examples,
 
         os.makedirs(join(images_dir, label), exist_ok=True)
         for k, image in enumerate(images):
-            save_image(image, join(images_dir, label, f'{name}-{k}.png'))
+            img_path = join(images_dir, label, f'{name}-{k}.png')
+            save_image(image, img_path)
+            img_paths.append(img_path)
 
         img_count += len(images)
         if max_examples and img_count >= max_examples:
             break
 
-    assert 0 < img_count <= (max_examples or img_count), label
+    copy_count = 0
+    while img_count < min_examples:
+        src_path = img_paths[img_count % len(img_paths)]
+        dst_path = re.sub('.png', f'-{copy_count}.png', src_path)
+        shutil.copyfile(src_path, dst_path)
+        img_count += 1
+        copy_count += 1
+
+    assert min_examples <= img_count <= (max_examples or img_count), label
     return img_count
 
 
@@ -57,16 +70,25 @@ def make_images_for_class(label, images_dir, audio_dir, max_examples,
               show_default=True)
 @click.option('-i', '--images-dir', default=DEFAULT_IMAGES_DIR,
               show_default=True)
-@click.option('-m', '--max-examples-per-class', 'max_examples', type=int)
+@click.option('-m', '--min-examples-per-class', 'min_examples', default=10,
+              show_default=True)
+@click.option('-M', '--max-examples-per-class', 'max_examples', type=int)
 @click.option('-d', '--frame-duration', default=DEFAULT_FRAME_DURATION,
               show_default=True)
-def main(audio_dir, images_dir, max_examples, frame_duration):
-    if max_examples is not None and max_examples < 1:
-        sys.exit('E: max_examples must be > 0')
+def main(audio_dir, images_dir, min_examples, max_examples, frame_duration):
+    if min_examples < 1:
+        sys.exit('E: min_examples must be > 0')
+
+    if max_examples is not None:
+        if max_examples < 1:
+            sys.exit('E: max_examples must be > 0')
+        if max_examples < min_examples:
+            sys.exit('E: max_examples must be >= min_examples')
 
     class_counts = {
         cls: make_images_for_class(
-            cls, images_dir, audio_dir, max_examples, frame_duration)
+            cls, images_dir, audio_dir, min_examples, max_examples,
+            frame_duration)
         for cls in os.listdir(audio_dir)
     }
 
