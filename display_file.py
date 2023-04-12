@@ -140,9 +140,10 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
     audio, sr = librosa.load(path, sr=None)
     assert len(audio.shape) == 1, audio.shape
     print('Sample rate:', sr)
+    print('Num. samples:', len(audio))
 
     play_time = len(audio) / sr
-    print('Playback length:', play_time)
+    print('Playback time:', '%.3f' % play_time, 'seconds')
 
     if limit_audio_length and play_time > limit_audio_length:
         print('I: applying audio length limit')
@@ -154,7 +155,8 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
 
     hop_length = n_fft // HOP_FACTOR
     print('Num. samples / FFT frame:', n_fft)
-    print('Frame duration (seconds):', n_fft / sr)
+    print('Frame duration:', n_fft / sr, 'seconds')
+    print('Hop length:', hop_length)
     print('Num. frames:', 1 + len(audio) // hop_length)
     D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
     # print('D.shape', D.shape)
