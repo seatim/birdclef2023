@@ -35,18 +35,18 @@ def image_width(audio_play_time, sr, hop_length):
 
 def images_from_audio(path, cfg):
     image = image_from_audio(path, cfg)
-    max_image_width = image_width(
+    frame_width = image_width(
         cfg.frame_duration, cfg.sample_rate, cfg.hop_length)
-    remainder = image.shape[1] % max_image_width
+    remainder = image.shape[1] % frame_width
 
     if remainder and cfg.pad_remainder:
-        pad_len = max_image_width - remainder
+        pad_len = frame_width - remainder
         image = np.hstack([image, np.zeros((cfg.n_mels, pad_len))])
-        assert image.shape[1] % max_image_width == 0
+        assert image.shape[1] % frame_width == 0
     else:
         # NB: remainder is dropped in this case
         pass
 
-    n_images = image.shape[1] // max_image_width
-    return [image[:, k:k+max_image_width]
-            for k in range(0, max_image_width * n_images, max_image_width)]
+    n_images = image.shape[1] // frame_width
+    return [image[:, k:k+frame_width]
+            for k in range(0, frame_width * n_images, frame_width)]
