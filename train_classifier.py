@@ -21,12 +21,7 @@ from sklearn.metrics import average_precision_score
 from torch.nn.functional import one_hot
 from PIL import Image, UnidentifiedImageError
 
-from adak.transform import DEFAULT_N_MELS as N_MELS
-
-DEFAULT_IMAGES_DIR = 'data/train_images'
-
-# for reproducibility
-RANDOM_SEED = 11462  # output of random.randint(0, 99999)
+from adak.config import TrainConfig
 
 
 def avg_precision(y_pred, y_true, n_classes):
@@ -47,7 +42,7 @@ def get_image_data(path):
     return data
 
 
-def check_image(image_path, check_load_image):
+def check_image(cfg, image_path, check_load_image):
     try:
         img_shape = get_image_info(image_path).size
     except UnidentifiedImageError as e:
@@ -60,25 +55,25 @@ def check_image(image_path, check_load_image):
         except OSError as e:
             return f'{e.args[0]}: {image_path}'
 
-    if img_shape[1] != N_MELS:
-        return f'image height != {N_MELS}: {image_path}'
+    if img_shape[1] != cfg.n_mels:
+        return f'image height != {cfg.n_mels}: {image_path}'
 
 
-def check_images(images_dir, classes, check_load_images):
+def check_images(cfg, classes, check_load_images):
     class_counts = defaultdict(int)
 
     for label in classes:
-        for name in os.listdir(join(images_dir, label)):
-            check_image(join(images_dir, label, name), check_load_images)
+        for name in os.listdir(join(cfg.images_dir, label)):
+            img_path = join(cfg.images_dir, label, name)
+            check_image(cfg, img_path, check_load_images)
             class_counts[label] += 1
 
     return class_counts
 
 
-def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
-                    img_cls=PILImageBW):
-    splitter = RandomSplitter(valid_pct, seed=seed)
-    item_tfms = Resize(N_MELS)
+def get_data_loader(path, vocab, cfg, img_cls=PILImageBW):
+    splitter = RandomSplitter(cfg.valid_pct, seed=cfg.random_seed)
+    item_tfms = Resize(cfg.n_mels)
     batch_tfms = [Brightness(), Contrast()]
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
@@ -91,7 +86,7 @@ def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
 
 @click.command()
 @click.option('-c', '--check-load-images', is_flag=True)
-@click.option('-i', '--images-dir', default=DEFAULT_IMAGES_DIR,
+@click.option('-i', '--images-dir', default=TrainConfig.images_dir,
               show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
 def main(check_load_images, images_dir, epochs):
@@ -99,16 +94,18 @@ def main(check_load_images, images_dir, epochs):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
                  f'images directory with make_images_from_audio.py.')
 
+    config = TrainConfig.from_dict(images_dir=images_dir)
+
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
 
-    class_counts = check_images(images_dir, classes, check_load_images)
+    class_counts = check_images(config, classes, check_load_images)
     values = class_counts.values()
     print(f'I: class count stats (min/mean/max):', min(values), '/',
           '%.1f' % np.mean(list(values)), '/', max(values))
     print(f'I: training on {sum(values)} image files')
 
-    dls = get_data_loader(images_dir, classes)
+    dls = get_data_loader(images_dir, classes, config)
     arch = 'efficientnet_b0'
 
     metrics = [error_rate, partial(avg_precision, n_classes=len(classes))]

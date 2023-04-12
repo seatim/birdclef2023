@@ -3,28 +3,20 @@ import librosa
 import numpy as np
 import soundfile
 
-DEFAULT_N_MELS = 224
-DEFAULT_N_FFT = 1024
-DEFAULT_HOP_LENGTH = DEFAULT_N_FFT // 2
-DEFAULT_SAMPLE_RATE = 32000
-DEFAULT_FRAME_DURATION = 10.
-
 
 class EmptyImage(Exception):
     pass
 
 
-def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
-                     hop_length=DEFAULT_HOP_LENGTH, assert_sr=None):
+def image_from_audio(path, cfg):
     """Generate mel spectrogram of audio file.
     """
     audio, sr = soundfile.read(path)
-
-    if assert_sr:
-        assert sr == assert_sr, (path, sr)
+    assert sr == cfg.sample_rate, (path, sr)
 
     M = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length)
+        y=audio, sr=sr, n_mels=cfg.n_mels, n_fft=cfg.n_fft,
+        hop_length=cfg.hop_length)
 
     if not np.max(M):
         raise EmptyImage
@@ -37,27 +29,19 @@ def image_from_audio(path, n_mels=DEFAULT_N_MELS, n_fft=DEFAULT_N_FFT,
     return M
 
 
-def image_width(audio_play_time, sr=DEFAULT_SAMPLE_RATE,
-                hop_length=DEFAULT_HOP_LENGTH):
+def image_width(audio_play_time, sr, hop_length):
     return 1 + int(audio_play_time * sr) // hop_length
 
 
-def images_from_audio(path, frame_duration=DEFAULT_FRAME_DURATION,
-                      pad_remainder=True, **kwargs):
-    image = image_from_audio(path, **kwargs)
-
-    try:
-        kwargs['sr'] = kwargs.pop('assert_sr')
-    except KeyError:
-        pass
-
-    max_image_width = image_width(frame_duration, **kwargs)
-
+def images_from_audio(path, cfg):
+    image = image_from_audio(path, cfg)
+    max_image_width = image_width(
+        cfg.frame_duration, cfg.sample_rate, cfg.hop_length)
     remainder = image.shape[1] % max_image_width
-    if remainder and pad_remainder:
-        image_height = kwargs.get('n_mels', DEFAULT_N_MELS)
+
+    if remainder and cfg.pad_remainder:
         pad_len = max_image_width - remainder
-        image = np.hstack([image, np.zeros((image_height, pad_len))])
+        image = np.hstack([image, np.zeros((cfg.n_mels, pad_len))])
         assert image.shape[1] % max_image_width == 0
     else:
         # NB: remainder is dropped in this case
