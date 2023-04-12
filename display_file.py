@@ -17,7 +17,6 @@ MIN_N_FFT = 128
 MIN_N_MELS = 128
 MAX_N_MELS = 232
 HOP_FACTOR = 2
-DEFAULT_OUTPUT_DIR = '.'
 
 
 def show_or_save(show, save, array, dir_, filename):
@@ -120,8 +119,7 @@ def histeq(array, dir_, filename, do_show_hist=False):
 @click.option('-Y', '--save-phase-spectrogram', is_flag=True)
 @click.option('-z', '--show-mel-spectrogram', is_flag=True)
 @click.option('-Z', '--save-mel-spectrogram', is_flag=True)
-@click.option('-o', '--output-dir', default=DEFAULT_OUTPUT_DIR,
-              show_default=True)
+@click.option('-o', '--output-dir', default='.', show_default=True)
 def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
          show_magnitude_spectrogram, save_magnitude_spectrogram,
          show_phase_spectrogram, save_phase_spectrogram,
