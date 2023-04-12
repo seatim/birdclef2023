@@ -115,7 +115,13 @@ def main(check_load_images, exit_on_error, images_dir, epochs):
     dls = get_data_loader(images_dir, classes, config)
     arch = 'efficientnet_b0'
 
-    metrics = [error_rate, partial(avg_precision, n_classes=len(classes))]
+    metrics = [error_rate]
+    if sys.version_info[:2] >= (3, 8):
+        # average_precision_score() requires python 3.8+ and version 1.1+ of
+        # scikit-learn.  See [1] for more information.
+        # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
+        metrics.append(partial(avg_precision, n_classes=len(classes)))
+
     learn = vision_learner(dls, arch, metrics=metrics).to_fp16()
 
     warnings.filterwarnings(
