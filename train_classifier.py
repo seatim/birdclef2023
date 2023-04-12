@@ -1,11 +1,12 @@
 
 import os
+import sys
 import warnings
 
 from collections import defaultdict
 from datetime import datetime
 from functools import partial
-from os.path import join
+from os.path import isdir, join
 
 import click
 import numpy as np
@@ -94,6 +95,10 @@ def get_data_loader(path, vocab, valid_pct=0.2, seed=RANDOM_SEED,
               show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
 def main(check_load_images, images_dir, epochs):
+    if not isdir(images_dir):
+        sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
+                 f'images directory with make_images_from_audio.py.')
+
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
 
