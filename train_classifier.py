@@ -1,8 +1,10 @@
 
 import os
+import warnings
 
 from collections import defaultdict
 from datetime import datetime
+from functools import partial
 from os.path import join
 
 import click
@@ -14,6 +16,8 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                CategoryBlock, PILImageBW,
                                get_image_files, parent_label, Resize,
                                Brightness, Contrast)
+from sklearn.metrics import average_precision_score
+from torch.nn.functional import one_hot
 from PIL import Image, UnidentifiedImageError
 
 from adak.transform import DEFAULT_N_MELS as N_MELS
@@ -22,6 +26,11 @@ DEFAULT_IMAGES_DIR = 'data/train_images.narrow.all'
 
 # for reproducibility
 RANDOM_SEED = 11462  # output of random.randint(0, 99999)
+
+
+def avg_precision(y_pred, y_true, n_classes):
+    assert y_pred.shape[1] == n_classes, y_pred.shape
+    return average_precision_score(one_hot(y_true, n_classes), y_pred)
 
 
 def get_image_info(path):
@@ -96,7 +105,13 @@ def main(check_load_images, images_dir, epochs):
 
     dls = get_data_loader(images_dir, classes)
     arch = 'efficientnet_b0'
-    learn = vision_learner(dls, arch, metrics=error_rate).to_fp16()
+
+    metrics = [error_rate, partial(avg_precision, n_classes=len(classes))]
+    learn = vision_learner(dls, arch, metrics=metrics).to_fp16()
+
+    warnings.filterwarnings(
+        action='ignore', category=UserWarning,
+        message='No positive class found in y_true, recall')
 
     # TODO: optimize learning rate
     learn.fine_tune(epochs, 0.01)
