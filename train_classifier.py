@@ -14,9 +14,8 @@ import pandas as pd
 
 from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
-                               CategoryBlock, PILImageBW,
-                               get_image_files, parent_label, Resize,
-                               Brightness, Contrast)
+                               CategoryBlock, PILImageBW, get_image_files,
+                               parent_label, Resize, Brightness, Contrast)
 from sklearn.metrics import average_precision_score
 from torch.nn.functional import one_hot
 from PIL import Image, UnidentifiedImageError
