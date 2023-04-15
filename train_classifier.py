@@ -21,6 +21,7 @@ from torch.nn.functional import one_hot
 from PIL import Image, UnidentifiedImageError
 
 from adak.config import TrainConfig
+from adak.sed import SoundEventDetectionFilter, bind_alt
 
 
 def avg_precision(y_pred, y_true, n_classes):
@@ -75,16 +76,20 @@ def check_images(cfg, classes, check_load_images, exit_on_error):
     return class_counts
 
 
-def get_data_loader(path, vocab, cfg, img_cls=PILImageBW):
+def get_data_loader(path, vocab, cfg, sed, img_cls=PILImageBW):
+
     splitter = RandomSplitter(cfg.valid_pct, seed=cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
     batch_tfms = [Brightness(), Contrast()]
+    get_y = bind_alt(sed.get_y) if sed else parent_label
+
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
                        splitter=splitter,
-                       get_y=parent_label,
+                       get_y=get_y,
                        item_tfms=item_tfms,
                        batch_tfms=batch_tfms)
+
     return ImageDataLoaders.from_dblock(dblock, path, path=path)
 
 
@@ -111,7 +116,14 @@ def main(check_load_images, exit_on_error, images_dir, epochs):
           '%.1f' % np.mean(list(values)), '/', max(values))
     print(f'I: training on {sum(values)} image files')
 
-    dls = get_data_loader(images_dir, classes, config)
+    if config.use_sed:
+        classes = list(classes) + [SoundEventDetectionFilter.NON_EVENT]
+        sed = SoundEventDetectionFilter()
+        cbs = [sed]
+    else:
+        sed = cbs = None
+
+    dls = get_data_loader(images_dir, classes, config, sed)
     arch = 'efficientnet_b0'
 
     metrics = [error_rate]
@@ -121,7 +133,7 @@ def main(check_load_images, exit_on_error, images_dir, epochs):
         # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
         metrics.append(partial(avg_precision, n_classes=len(classes)))
 
-    learn = vision_learner(dls, arch, metrics=metrics).to_fp16()
+    learn = vision_learner(dls, arch, metrics=metrics, cbs=cbs).to_fp16()
 
     warnings.filterwarnings(
         action='ignore', category=UserWarning,
