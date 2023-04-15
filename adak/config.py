@@ -12,7 +12,7 @@ class TrainConfig:
     min_examples = 10
     max_examples = None
     valid_pct = 0.2
-    random_seed = 11462
+    random_seed = None
 
     @classmethod
     def from_dict(cls, **kwargs):
