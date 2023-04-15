@@ -3,6 +3,7 @@ import math
 import unittest
 import warnings
 
+from itertools import product
 from os.path import dirname, join
 
 import numpy as np
@@ -40,14 +41,23 @@ class Test_image_from_audio(MaskWarnings):
 
 
 class Test_images_from_audio(MaskWarnings):
-    @parameterized.expand(((3,), (5,), (11.1,)))
-    def test1(self, frame_duration):
+    @parameterized.expand(product((3, 5., 11.1, 81.1), (1, 2, 2.5)))
+    def test1(self, frame_duration, oversample_factor):
         self.config.frame_duration = frame_duration
+        self.config.frame_hop_length = frame_hop_length = \
+            int(self.image_width(frame_duration) / oversample_factor)
 
         imgs = np.array(images_from_audio(TEST_AUDIO_PATH, self.config))
         orig_img_width = self.image_width(TEST_AUDIO_PLAY_TIME)
         frame_img_width = self.image_width(frame_duration)
-        expected_n_imgs = math.ceil(orig_img_width / frame_img_width)
+        expected_n_imgs = math.ceil(orig_img_width / frame_hop_length)
 
         self.assertEqual(imgs.shape,
             (expected_n_imgs, self.config.n_mels, frame_img_width))
+
+    def test_bad_frame_hop_length(self):
+        frame_duration = self.config.frame_duration
+        self.config.frame_hop_length = self.image_width(frame_duration) + 1
+
+        with self.assertRaises(ValueError):
+            np.array(images_from_audio(TEST_AUDIO_PATH, self.config))

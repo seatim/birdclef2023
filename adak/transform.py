@@ -37,16 +37,37 @@ def images_from_audio(path, cfg):
     image = image_from_audio(path, cfg)
     frame_width = image_width(
         cfg.frame_duration, cfg.sample_rate, cfg.hop_length)
-    remainder = image.shape[1] % frame_width
+    remainder = image.shape[1] % cfg.frame_hop_length
+
+    if cfg.frame_hop_length > frame_width:
+        raise ValueError('frame_hop_length must be <= frame_width')
 
     if remainder and cfg.pad_remainder:
-        pad_len = frame_width - remainder
+        pad_len = cfg.frame_hop_length - remainder
         image = np.hstack([image, np.zeros((cfg.n_mels, pad_len))])
-        assert image.shape[1] % frame_width == 0
+        assert image.shape[1] % cfg.frame_hop_length == 0
     else:
         # NB: remainder is dropped in this case
         pass
 
-    n_images = image.shape[1] // frame_width
-    return [image[:, k:k+frame_width]
-            for k in range(0, frame_width * n_images, frame_width)]
+    def frame(k):
+        offset = k * cfg.frame_hop_length
+        end = offset + frame_width
+
+        if end <= image.shape[1]:
+            return image[:, offset:end]
+        else:
+            assert cfg.frame_hop_length != frame_width, \
+                'if frame_hop_length == frame_width this should not happen'
+
+            if not cfg.pad_remainder:
+                raise ValueError(
+                    'pad_remainder is required when frame_hop_length != '
+                    'frame_width')
+
+            pad_len = end - image.shape[1]
+            return np.hstack(
+                [image[:, offset:], np.zeros((cfg.n_mels, pad_len))])
+
+    n_frames = image.shape[1] // cfg.frame_hop_length
+    return [frame(k) for k in range(0, n_frames)]
