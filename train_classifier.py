@@ -93,6 +93,17 @@ def get_data_loader(path, vocab, cfg, sed, img_cls=PILImageBW):
     return ImageDataLoaders.from_dblock(dblock, path, path=path)
 
 
+def validate_model_dir(config):
+    if config.model_dir:
+        if not config.model_dir.startswith('/'):
+            raise ValueError('model_dir must be absolute path because it is '
+                             'ambiguous otherwise')
+        if not isdir(config.model_dir):
+            raise ValueError('model_dir is not a directory')
+        if not os.access(config.model_dir, os.W_OK):
+            raise ValueError('model_dir is not writable')
+
+
 @click.command()
 @click.option('-c', '--check-load-images', is_flag=True)
 @click.option('-b', '--exit-on-error', is_flag=True)
@@ -105,6 +116,7 @@ def main(check_load_images, exit_on_error, images_dir, epochs):
                  f'images directory with make_images_from_audio.py.')
 
     config = TrainConfig.from_dict(images_dir=images_dir)
+    validate_model_dir(config)
 
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
@@ -143,9 +155,11 @@ def main(check_load_images, exit_on_error, images_dir, epochs):
     learn.fine_tune(epochs, 0.01)
 
     timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
-    model_filename = f'birdclef-model-{timestamp}.pkl'
-    learn.export(model_filename)
-    print(f'exported model to "{model_filename}"')
+    model_path = f'birdclef-model-{timestamp}.pkl'
+    if config.model_dir:
+        model_path = join(config.model_dir, model_path)
+    learn.export(model_path)
+    print(f'exported model to "{model_path}"')
 
 
 if __name__ == '__main__':
