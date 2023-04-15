@@ -144,9 +144,8 @@ def main(check_load_images, exit_on_error, images_dir, epochs):
 
     timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
     model_filename = f'birdclef-model-{timestamp}.pkl'
-    learn.save(model_filename)
     learn.export(model_filename)
-    print(f'saved and exported model to "{model_filename}"')
+    print(f'exported model to "{model_filename}"')
 
 
 if __name__ == '__main__':
