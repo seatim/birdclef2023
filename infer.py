@@ -10,7 +10,7 @@ from fastai.vision.all import load_learner, parent_label, Resize
 
 from adak.config import TrainConfig
 from adak.glue import avg_precision  # NB: needed by some models!
-from adak.transform import images_from_audio
+from adak.transform import images_from_audio, image_width
 
 
 @click.command()
@@ -23,6 +23,12 @@ def main(model_path, audio_dir, verbose):
     classes = np.array(learn.dls.vocab)
     resize = Resize(TrainConfig.n_mels)
     config = TrainConfig.from_dict(audio_dir=audio_dir)
+
+    # NB: set frame_hop_length = frame_width.  Overlapping frames are good for
+    # NB: training but a waste of time in this context.
+    frame_width = image_width(
+        config.frame_duration, config.sample_rate, config.hop_length)
+    config.frame_hop_length = frame_width
 
     n_inferences = n_top1 = n_top5 = 0
 
