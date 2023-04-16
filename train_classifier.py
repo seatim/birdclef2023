@@ -16,17 +16,11 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
                                CategoryBlock, PILImageBW, get_image_files,
                                parent_label, Resize, Brightness, Contrast)
-from sklearn.metrics import average_precision_score
-from torch.nn.functional import one_hot
 from PIL import Image, UnidentifiedImageError
 
 from adak.config import TrainConfig
+from adak.glue import avg_precision
 from adak.sed import SoundEventDetectionFilter, bind_alt
-
-
-def avg_precision(y_pred, y_true, n_classes):
-    assert y_pred.shape[1] == n_classes, y_pred.shape
-    return average_precision_score(one_hot(y_true, n_classes), y_pred)
 
 
 def get_image_info(path):
