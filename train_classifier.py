@@ -60,7 +60,10 @@ def check_images(cfg, classes, check_load_images, exit_on_error):
         classes_present = set(classes) & set(os.listdir(images_dir))
         print(f'Found {len(classes_present)} classes in {images_dir}')
 
-        for label in classes_present:
+        for k, label in enumerate(classes_present):
+            print(f'Checking {label} [{k}/{len(classes_present)}]...',
+                  end='\r', flush=True)
+
             for name in os.listdir(join(images_dir, label)):
                 img_path = join(images_dir, label, name)
                 error = check_image(cfg, img_path, check_load_images)
