@@ -9,6 +9,7 @@ import numpy as np
 from fastai.vision.all import load_learner, parent_label, Resize
 
 from adak.config import TrainConfig
+from adak.glue import avg_precision  # NB: needed by some models!
 from adak.transform import images_from_audio
 
 
