@@ -3,6 +3,7 @@
 class TrainConfig:
     audio_dir = 'data/train_audio'
     images_dir = 'data/train_images'
+    bc21_images_dir = 'data/birdclef-2021/train_images'
     model_dir = None
     n_mels = 224
     n_fft = 1024
