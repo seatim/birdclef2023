@@ -1,4 +1,5 @@
 
+import math
 import sys
 
 from os.path import exists, join
@@ -57,18 +58,41 @@ def avg_precision_over_subset(y_pred, y_true, classes, subset):
     return avg_precision(y_pred, tensor(y_true), len(subset))
 
 
+def do_filter_top_k(preds, k):
+    def filter_top_k(pred):
+        assert math.isclose(sum(pred), 1, rel_tol=1e-5), sum(pred)
+        pred_argsort = pred.argsort()
+        top_k_indices = pred_argsort[-k:]
+        bottom_n_k_indices = pred_argsort[:-k]
+        top_k_values = pred[top_k_indices]
+
+        new_pred = pred.copy()
+        new_pred[top_k_indices] = top_k_values / sum(top_k_values)
+        new_pred[bottom_n_k_indices] = 0
+        assert math.isclose(sum(new_pred), 1, rel_tol=1e-7), sum(new_pred)
+        return new_pred
+
+    return np.stack([filter_top_k(pred) for pred in preds])
+
+
 @click.command()
 @click.argument('model_path')
 @click.option('-a', '--audio-dir', default=TrainConfig.audio_dir,
               show_default=True)
 @click.option('-q', '--quick', is_flag=True,
               help='infer only first image of each audio file')
+@click.option('-k', '--filter-top-k', type=int,
+              help='drop n-k lowest probability predictions and renormalize '
+                   'the rest')
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, audio_dir, quick, verbose):
+def main(model_path, audio_dir, quick, filter_top_k, verbose):
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
     resize = Resize(TrainConfig.n_mels)
     config = TrainConfig.from_dict(audio_dir=audio_dir)
+
+    if (filter_top_k is not None) and not (0 < filter_top_k < len(classes)):
+        sys.exit('E: filter_top_k must be > 0 and < n_classes')
 
     # NB: set frame_hop_length = frame_width.  Overlapping frames are good for
     # NB: training but a waste of time in this context.
@@ -106,6 +130,9 @@ def main(model_path, audio_dir, quick, verbose):
 
         preds = np.stack([learn.predict(img)[2].numpy() for img in images])
         assert preds.shape[1] == len(classes), preds[0]
+
+        if filter_top_k:
+            preds = do_filter_top_k(preds, filter_top_k)
 
         top5 = [classes[pred.argsort()[-5:]] for pred in preds]
         top1 = [_[-1] for _ in top5]
