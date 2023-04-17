@@ -1,5 +1,6 @@
 
 import sys
+import warnings
 
 from os.path import exists, join
 
@@ -7,9 +8,10 @@ import click
 import numpy as np
 
 from fastai.vision.all import load_learner, parent_label, Resize
+from torch import tensor
 
 from adak.config import TrainConfig
-from adak.glue import avg_precision  # NB: needed by some models!
+from adak.glue import avg_precision
 from adak.transform import images_from_audio, image_width
 
 
@@ -32,6 +34,10 @@ def main(model_path, audio_dir, verbose):
 
     n_inferences = n_top1 = n_top5 = 0
 
+    # to calculate AP score we need to accumulate predictions and true values.
+    y_pred = []
+    y_true = []
+
     for line in sys.stdin:
         path = line.strip()
         if not exists(path):
@@ -44,9 +50,10 @@ def main(model_path, audio_dir, verbose):
         images = [resize(img) for img in images]
 
         correct_label = parent_label(path)
+        correct_label_index = list(learn.dls.vocab).index(correct_label)
 
-        preds = [np.array(learn.predict(img)[2]) for img in images]
-        assert np.array(preds).shape[1] == len(classes), preds[0]
+        preds = np.stack([learn.predict(img)[2].numpy() for img in images])
+        assert preds.shape[1] == len(classes), preds[0]
 
         top5 = [classes[pred.argsort()[-5:]] for pred in preds]
         top1 = [_[-1] for _ in top5]
@@ -62,10 +69,21 @@ def main(model_path, audio_dir, verbose):
         n_top1 += sum(label == correct_label for label in top1)
         n_top5 += sum(correct_label in labels for labels in top5)
 
+        y_pred.append(preds)
+        y_true.append([correct_label_index] * len(images))
+
     print('Results:')
     print(f'{n_inferences} inferences')
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
+
+    warnings.filterwarnings(
+        action='ignore', category=UserWarning,
+        message='No positive class found in y_true, recall')
+
+    ap_score = avg_precision(
+        np.vstack(y_pred), tensor(np.hstack(y_true)), len(classes))
+    print(f'average precision score: {ap_score:.3f}')
 
 
 if __name__ == '__main__':
