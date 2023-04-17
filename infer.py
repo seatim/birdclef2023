@@ -19,8 +19,10 @@ from adak.transform import images_from_audio, image_width
 @click.argument('model_path')
 @click.option('-a', '--audio-dir', default=TrainConfig.audio_dir,
               show_default=True)
+@click.option('-q', '--quick', is_flag=True,
+              help='infer only first image of each audio file')
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, audio_dir, verbose):
+def main(model_path, audio_dir, quick, verbose):
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
     resize = Resize(TrainConfig.n_mels)
@@ -43,6 +45,8 @@ def main(model_path, audio_dir, verbose):
         if not exists(path):
             path = join(audio_dir, path)
         images = images_from_audio(path, config)
+        if quick:
+            images = images[:1]
 
         # FIXME add flip and scale options to load function
         images = [np.flip(img, axis=0) for img in images]
