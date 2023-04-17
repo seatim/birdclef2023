@@ -1,6 +1,5 @@
 
 import sys
-import warnings
 
 from os.path import exists, join
 
@@ -13,6 +12,49 @@ from torch import tensor
 from adak.config import TrainConfig
 from adak.glue import avg_precision
 from adak.transform import images_from_audio, image_width
+
+
+def validate_paths(paths, model_classes):
+    if not all(len(path.split('/')) == 2 for path in paths):
+        raise ValueError('audio paths must be relative to audio directory')
+
+    present_classes = set(parent_label(path) for path in paths)
+    unknown_classes = present_classes - set(model_classes)
+    known_classes = present_classes - unknown_classes
+
+    if unknown_classes:
+        print('W: some classes present in input are not known to model. These '
+              'will be ignored.')
+
+    return known_classes, unknown_classes
+
+
+def avg_precision_over_subset(y_pred, y_true, classes, subset):
+    unknown_classes = set(subset) - set(classes)
+    assert unknown_classes == set(), unknown_classes
+
+    classes = list(classes)
+    subset = list(subset)
+    present_class_indices = [classes.index(label) for label in subset]
+
+    assert len(y_pred.shape) == 2, y_pred.shape
+    assert len(y_true.shape) == 1, y_true.shape
+    n_samples = y_pred.shape[0]
+    assert n_samples == len(y_true), (n_samples, len(y_true))
+    assert y_pred.shape[1] == len(classes), (y_pred.shape, len(classes))
+    assert all(idx in range(len(classes)) for idx in y_true)
+
+    y_pred = np.array([pred[present_class_indices] for pred in y_pred])
+    y_true = np.array([present_class_indices.index(idx) for idx in y_true])
+
+    assert len(y_pred.shape) == 2, y_pred.shape
+    assert len(y_true.shape) == 1, y_true.shape
+    assert n_samples == len(y_true), (n_samples, len(y_true))
+    assert n_samples == y_pred.shape[0], (n_samples, y_pred.shape)
+    assert y_pred.shape[1] == len(subset), (y_pred.shape, len(subset))
+    assert all(idx in range(len(subset)) for idx in y_true)
+
+    return avg_precision(y_pred, tensor(y_true), len(subset))
 
 
 @click.command()
@@ -40,8 +82,15 @@ def main(model_path, audio_dir, quick, verbose):
     y_pred = []
     y_true = []
 
-    for line in sys.stdin:
-        path = line.strip()
+    paths = [line.strip() for line in sys.stdin]
+    known_classes, unknown_classes = validate_paths(paths, classes)
+
+    for path in paths:
+        correct_label = parent_label(path)
+        if correct_label in unknown_classes:
+            print(f'I: unknown class {correct_label}, skipping')
+        correct_label_index = list(learn.dls.vocab).index(correct_label)
+
         if not exists(path):
             path = join(audio_dir, path)
         images = images_from_audio(path, config)
@@ -54,9 +103,6 @@ def main(model_path, audio_dir, quick, verbose):
         images = [np.flip(img, axis=0) for img in images]
         images = [np.uint8(255 * img) for img in images]
         images = [resize(img) for img in images]
-
-        correct_label = parent_label(path)
-        correct_label_index = list(learn.dls.vocab).index(correct_label)
 
         preds = np.stack([learn.predict(img)[2].numpy() for img in images])
         assert preds.shape[1] == len(classes), preds[0]
@@ -83,12 +129,8 @@ def main(model_path, audio_dir, quick, verbose):
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
 
-    warnings.filterwarnings(
-        action='ignore', category=UserWarning,
-        message='No positive class found in y_true, recall')
-
-    ap_score = avg_precision(
-        np.vstack(y_pred), tensor(np.hstack(y_true)), len(classes))
+    ap_score = avg_precision_over_subset(
+        np.vstack(y_pred), np.hstack(y_true), classes, known_classes)
     print(f'average precision score: {ap_score:.3f}')
 
 
