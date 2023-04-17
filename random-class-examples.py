@@ -4,14 +4,17 @@ import random
 from os.path import join
 
 import click
+import numpy as np
 import pandas as pd
 
 
 @click.command()
 @click.option('-d', '--data-dir', type=click.Path(), default='data',
               show_default=True)
+@click.option('-n', '--num-examples-per-class', 'num_examples', default=1,
+              show_default=True)
 @click.option('-v', '--verbose', is_flag=True)
-def main(data_dir, verbose):
+def main(data_dir, num_examples, verbose):
     tmd = pd.read_csv(join(data_dir, 'train_metadata.csv'))
 
     if verbose:
@@ -22,12 +25,12 @@ def main(data_dir, verbose):
               '%.1f' % class_counts.std())
 
     for label, df in tmd.groupby('primary_label'):
-        instance = random.choice(df.index)
-        row = df.loc[instance]
-        if label not in row.filename:
-            print(join(label, row.filename))
-        else:
-            print(row.filename)
+        instances = np.random.choice(df.index, size=num_examples)
+        for idx, row in df.loc[instances].iterrows():
+            if label not in row.filename:
+                print(join(label, row.filename))
+            else:
+                print(row.filename)
 
 
 if __name__ == '__main__':
