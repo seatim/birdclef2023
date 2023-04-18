@@ -19,7 +19,7 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
 from PIL import Image, UnidentifiedImageError
 
 from adak.config import TrainConfig
-from adak.glue import avg_precision
+from adak.glue import avg_precision, StratifiedSplitter
 from adak.sed import SoundEventDetectionFilter, bind_alt
 
 
@@ -77,9 +77,10 @@ def check_images(cfg, classes, check_load_images, exit_on_error):
     return class_counts
 
 
-def get_data_loader(path, vocab, cfg, sed, img_cls=PILImageBW):
+def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
 
-    splitter = RandomSplitter(cfg.valid_pct, seed=cfg.random_seed)
+    splitter_cls = RandomSplitter if random_split else StratifiedSplitter
+    splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
     batch_tfms = [Brightness(), Contrast()]
     get_y = bind_alt(sed.get_y) if sed else parent_label
@@ -114,8 +115,9 @@ def validate_model_dir(config):
               show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
+@click.option('-r', '--random-split', is_flag=True)
 def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
-         cpu):
+         cpu, random_split):
 
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
@@ -147,7 +149,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
     else:
         sed = cbs = None
 
-    dls = get_data_loader(images_dir, classes, config, sed)
+    dls = get_data_loader(images_dir, classes, config, sed, random_split)
     arch = 'efficientnet_b0'
 
     metrics = [error_rate]
