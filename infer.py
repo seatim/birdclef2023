@@ -81,12 +81,21 @@ def do_filter_top_k(preds, k):
               show_default=True)
 @click.option('-q', '--quick', is_flag=True,
               help='infer only first image of each audio file')
+@click.option('-Q', '--quicker', is_flag=True,
+              help='infer only first image of each audio file and process '
+                   'minimum amount of audio.  NB: this option results in '
+                   'inference over a different set of test images as compared '
+                   'to those inferred by the --quick option!!!  These images '
+                   'are contrast- and brightness-altered variants of those '
+                   'inferred by the --quick option.')
 @click.option('-k', '--filter-top-k', type=int,
               help='drop n-k lowest probability predictions and renormalize '
                    'the rest')
 @click.option('-K', '--top-k-filter-sweep', is_flag=True)
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, audio_dir, quick, filter_top_k, top_k_filter_sweep, verbose):
+def main(model_path, audio_dir, quick, quicker, filter_top_k,
+         top_k_filter_sweep, verbose):
+
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
     resize = Resize(TrainConfig.n_mels)
@@ -122,9 +131,13 @@ def main(model_path, audio_dir, quick, filter_top_k, top_k_filter_sweep, verbose
 
         if not exists(path):
             path = join(audio_dir, path)
-        images = images_from_audio(path, config)
-        if quick:
-            images = images[:1]
+
+        if quicker:
+            images = images_from_audio(path, config, 1)
+        else:
+            images = images_from_audio(path, config)
+            if quick:
+                images = images[:1]
 
         # NB: These operations are pretty fast.  One image flip takes about two
         # NB: usec, an image multiply takes about 83 usec, and a resize takes

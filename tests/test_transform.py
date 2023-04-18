@@ -61,3 +61,9 @@ class Test_images_from_audio(MaskWarnings):
 
         with self.assertRaises(ValueError):
             np.array(images_from_audio(TEST_AUDIO_PATH, self.config))
+
+    @parameterized.expand((1, 2, 3))
+    def test_max_frames(self, max_frames):
+        imgs = np.array(images_from_audio(
+            TEST_AUDIO_PATH, self.config, max_frames))
+        self.assertEqual(len(imgs), max_frames)
