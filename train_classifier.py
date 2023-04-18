@@ -113,7 +113,10 @@ def validate_model_dir(config):
 @click.option('-B', '--bc21-images-dir', default=TrainConfig.bc21_images_dir,
               show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
-def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs):
+@click.option('-C', '--cpu', is_flag=True)
+def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
+         cpu):
+
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
                  f'images directory with make_images_from_audio.py.')
@@ -154,7 +157,9 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs):
         # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
         metrics.append(partial(avg_precision, n_classes=len(classes)))
 
-    learn = vision_learner(dls, arch, metrics=metrics, cbs=cbs).to_fp16()
+    learn = vision_learner(dls, arch, metrics=metrics, cbs=cbs)
+    if not cpu:
+        learn = learn.to_fp16()
 
     warnings.filterwarnings(
         action='ignore', category=UserWarning,
