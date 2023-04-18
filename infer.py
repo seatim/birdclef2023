@@ -84,15 +84,20 @@ def do_filter_top_k(preds, k):
 @click.option('-k', '--filter-top-k', type=int,
               help='drop n-k lowest probability predictions and renormalize '
                    'the rest')
+@click.option('-K', '--top-k-filter-sweep', is_flag=True)
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, audio_dir, quick, filter_top_k, verbose):
+def main(model_path, audio_dir, quick, filter_top_k, top_k_filter_sweep, verbose):
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
     resize = Resize(TrainConfig.n_mels)
     config = TrainConfig.from_dict(audio_dir=audio_dir)
 
-    if (filter_top_k is not None) and not (0 < filter_top_k < len(classes)):
-        sys.exit('E: filter_top_k must be > 0 and < n_classes')
+    if filter_top_k is not None:
+        if top_k_filter_sweep:
+            sys.exit('E: choose either --filter-top-k or --top-k-filter-sweep')
+
+        if not (0 < filter_top_k < len(classes)):
+            sys.exit('E: filter_top_k must be > 0 and < n_classes')
 
     # NB: set frame_hop_length = frame_width.  Overlapping frames are good for
     # NB: training but a waste of time in this context.
@@ -156,9 +161,16 @@ def main(model_path, audio_dir, quick, filter_top_k, verbose):
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
 
-    ap_score = avg_precision_over_subset(
-        np.vstack(y_pred), np.hstack(y_true), classes, known_classes)
-    print(f'average precision score: {ap_score:.3f}')
+    if top_k_filter_sweep:
+        for k in (3, 5, 13, 36, 98, 264):
+            y_pred_k = [do_filter_top_k(pred, k) for pred in y_pred]
+            ap_score = avg_precision_over_subset(
+                np.vstack(y_pred_k), np.hstack(y_true), classes, known_classes)
+            print(f'average precision score, k={k}: {ap_score:.3f}')
+    else:
+        ap_score = avg_precision_over_subset(
+            np.vstack(y_pred), np.hstack(y_true), classes, known_classes)
+        print(f'average precision score: {ap_score:.3f}')
 
 
 if __name__ == '__main__':
