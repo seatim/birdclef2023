@@ -23,6 +23,8 @@ from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
 from adak.sed import SoundEventDetectionFilter, bind_alt
 
+DEFAULT_COMBINED_IMAGES_DIR = 'data/train_images'
+
 
 def get_image_info(path):
     f = Image.open(path)
@@ -35,6 +37,23 @@ def get_image_data(path):
     data = list(f.getdata())
     f.close()
     return data
+
+
+def create_combined_images_dir(cfg, path, dry_run=False):
+    def dry_run_cmd(cmd):
+        print(f'[DRY RUN] {cmd}')
+
+    cmd = dry_run_cmd if dry_run else os.system
+    cmd(f'mkdir -p {path}')
+    print()
+    print('Removing existing files from combined images directory...')
+    cmd(f'find {path} -type f -delete')
+    print()
+    print('Copying images...')
+    cmd(f'cp -r {cfg.images_dir}/* {path}')
+    if cfg.bc21_images_dir:
+        cmd(f'cp -r {cfg.bc21_images_dir}/* {path}')
+    print()
 
 
 def check_image(cfg, image_path, check_load_image):
@@ -54,26 +73,26 @@ def check_image(cfg, image_path, check_load_image):
         return f'image height != {cfg.n_mels}: {image_path}'
 
 
-def check_images(cfg, classes, check_load_images, exit_on_error):
+def check_images(cfg, check_load_images, exit_on_error, combined_images_dir):
     class_counts = defaultdict(int)
+    classes_present = set(name for name in os.listdir(combined_images_dir)
+                          if isdir(join(combined_images_dir, name)))
+    classes_present -= {'models'}
+    print(f'Found {len(classes_present)} classes in {combined_images_dir}')
 
-    for images_dir in filter(None, (cfg.images_dir, cfg.bc21_images_dir)):
-        classes_present = set(classes) & set(os.listdir(images_dir))
-        print(f'Found {len(classes_present)} classes in {images_dir}')
+    for k, label in enumerate(classes_present):
+        print(f'Checking {label} [{k}/{len(classes_present)}]...',
+              end='\r', flush=True)
 
-        for k, label in enumerate(classes_present):
-            print(f'Checking {label} [{k}/{len(classes_present)}]...',
-                  end='\r', flush=True)
-
-            for name in os.listdir(join(images_dir, label)):
-                img_path = join(images_dir, label, name)
-                error = check_image(cfg, img_path, check_load_images)
-                if error:
-                    if exit_on_error:
-                        sys.exit(f'E: {error}')
-                    else:
-                        print(f'W: {error}')
-                class_counts[label] += 1
+        for name in os.listdir(join(combined_images_dir, label)):
+            img_path = join(combined_images_dir, label, name)
+            error = check_image(cfg, img_path, check_load_images)
+            if error:
+                if exit_on_error:
+                    sys.exit(f'E: {error}')
+                else:
+                    print(f'W: {error}')
+            class_counts[label] += 1
 
     return class_counts
 
@@ -96,17 +115,6 @@ def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
     return ImageDataLoaders.from_dblock(dblock, path, path=path)
 
 
-def validate_model_dir(config):
-    if config.model_dir:
-        if not config.model_dir.startswith('/'):
-            raise ValueError('model_dir must be absolute path because it is '
-                             'ambiguous otherwise')
-        if not isdir(config.model_dir):
-            raise ValueError('model_dir is not a directory')
-        if not os.access(config.model_dir, os.W_OK):
-            raise ValueError('model_dir is not writable')
-
-
 @click.command()
 @click.option('-c', '--check-load-images', is_flag=True)
 @click.option('-b', '--exit-on-error', is_flag=True)
@@ -114,11 +122,13 @@ def validate_model_dir(config):
               show_default=True)
 @click.option('-B', '--bc21-images-dir', default=TrainConfig.bc21_images_dir,
               show_default=True)
+@click.option('-I', '--combined-images-dir',
+              default=DEFAULT_COMBINED_IMAGES_DIR, show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
-def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
-         cpu, random_split):
+def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
+         combined_images_dir, epochs, cpu, random_split):
 
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
@@ -126,7 +136,6 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
 
     config = TrainConfig.from_dict(
         images_dir=images_dir, bc21_images_dir=bc21_images_dir)
-    validate_model_dir(config)
 
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
@@ -136,8 +145,9 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
         classes21 = np.unique(tmd21.primary_label)
         classes = set(classes) | set(classes21)
 
+    create_combined_images_dir(config, combined_images_dir)
     class_counts = check_images(
-        config, classes, check_load_images, exit_on_error)
+        config, check_load_images, exit_on_error, combined_images_dir)
     values = class_counts.values()
     print(f'I: class count stats (min/mean/max):', min(values), '/',
           '%.1f' % np.mean(list(values)), '/', max(values))
@@ -150,7 +160,8 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
     else:
         sed = cbs = None
 
-    dls = get_data_loader(images_dir, classes, config, sed, random_split)
+    dls = get_data_loader(
+        combined_images_dir, classes, config, sed, random_split)
     dls.show_batch()
     arch = 'efficientnet_b0'
 
@@ -180,8 +191,6 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
 
     timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
     model_path = f'birdclef-model-{timestamp}.pkl'
-    if config.model_dir:
-        model_path = join(config.model_dir, model_path)
     learn.export(model_path)
     print(f'exported model to "{model_path}"')
 
