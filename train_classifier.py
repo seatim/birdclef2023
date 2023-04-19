@@ -83,7 +83,7 @@ def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
-    batch_tfms = [Brightness(), Contrast()]
+    batch_tfms = [Brightness(0.8), Contrast(0.8)]
     get_y = bind_alt(sed.get_y) if sed else parent_label
 
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
