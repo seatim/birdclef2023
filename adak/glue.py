@@ -1,9 +1,6 @@
 
-from functools import partial
-
 import numpy as np
 
-from fastai.metrics import AccumMetric, ActivationType
 from fastai.vision.all import L, parent_label
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import train_test_split
@@ -13,14 +10,6 @@ from torch.nn.functional import one_hot
 def avg_precision(y_pred, y_true, n_classes):
     assert y_pred.shape[1] == n_classes, y_pred.shape
     return average_precision_score(one_hot(y_true, n_classes), y_pred)
-
-
-class APScoreMulti(AccumMetric):
-    """Average Precision score for fastai vision learner
-    """
-    def __init__(self, n_classes):
-        super().__init__(partial(avg_precision, n_classes=n_classes),
-                         activation=ActivationType.Sigmoid, flatten=False)
 
 
 class StratifiedSplitter:
