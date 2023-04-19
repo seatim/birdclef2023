@@ -94,7 +94,10 @@ def check_images(cfg, check_load_images, exit_on_error, combined_images_dir):
                     print(f'W: {error}')
             class_counts[label] += 1
 
-    return class_counts
+    values = class_counts.values()
+    print(f'I: class count stats (min/mean/max):', min(values), '/',
+          '%.1f' % np.mean(list(values)), '/', max(values))
+    print(f'I: training on {sum(values)} image files')
 
 
 def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
@@ -146,12 +149,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         classes = set(classes) | set(classes21)
 
     create_combined_images_dir(config, combined_images_dir)
-    class_counts = check_images(
-        config, check_load_images, exit_on_error, combined_images_dir)
-    values = class_counts.values()
-    print(f'I: class count stats (min/mean/max):', min(values), '/',
-          '%.1f' % np.mean(list(values)), '/', max(values))
-    print(f'I: training on {sum(values)} image files')
+    check_images(config, check_load_images, exit_on_error, combined_images_dir)
 
     if config.use_sed:
         classes = list(classes) + [SoundEventDetectionFilter.NON_EVENT]
