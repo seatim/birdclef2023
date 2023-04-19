@@ -6,7 +6,7 @@ import warnings
 from collections import defaultdict
 from datetime import datetime
 from functools import partial
-from os.path import isdir, join
+from os.path import abspath, isdir, join
 
 import click
 import numpy as np
@@ -23,7 +23,7 @@ from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
 from adak.sed import SoundEventDetectionFilter, bind_alt
 
-DEFAULT_COMBINED_IMAGES_DIR = 'data/train_images'
+DEFAULT_COMBINED_IMAGES_DIR = 'data/train_images.combined'
 
 
 def get_image_info(path):
@@ -136,6 +136,8 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
                  f'images directory with make_images_from_audio.py.')
+    if abspath(images_dir) == abspath(combined_images_dir):
+        sys.exit('E: images_dir and combined_images_dir must be different')
 
     config = TrainConfig.from_dict(
         images_dir=images_dir, bc21_images_dir=bc21_images_dir)
