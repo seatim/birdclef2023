@@ -5,7 +5,6 @@ import warnings
 
 from collections import defaultdict
 from datetime import datetime
-from functools import partial
 from os.path import isdir, join
 
 import click
@@ -19,7 +18,7 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
 from PIL import Image, UnidentifiedImageError
 
 from adak.config import TrainConfig
-from adak.glue import avg_precision, StratifiedSplitter
+from adak.glue import APScoreMulti, StratifiedSplitter
 from adak.sed import SoundEventDetectionFilter, bind_alt
 
 
@@ -152,20 +151,16 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
     dls = get_data_loader(images_dir, classes, config, sed, random_split)
     arch = 'efficientnet_b0'
 
-    metrics = [error_rate]
-    if sys.version_info[:2] >= (3, 8):
-        # average_precision_score() requires python 3.8+ and version 1.1+ of
-        # scikit-learn.  See [1] for more information.
-        # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
-        metrics.append(partial(avg_precision, n_classes=len(classes)))
-
+    metrics = [error_rate, APScoreMulti(len(classes))]
     learn = vision_learner(dls, arch, metrics=metrics, cbs=cbs)
     if not cpu:
         learn = learn.to_fp16()
 
-    warnings.filterwarnings(
-        action='ignore', category=UserWarning,
-        message='No positive class found in y_true, recall')
+    if random_split:
+        print('W: average precision score is invalid due to random split')
+        warnings.filterwarnings(
+            action='ignore', category=UserWarning,
+            message='No positive class found in y_true, recall')
 
     # TODO: optimize learning rate
     learn.fine_tune(epochs, 0.01)
