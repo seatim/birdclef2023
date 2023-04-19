@@ -151,6 +151,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir, epochs,
         sed = cbs = None
 
     dls = get_data_loader(images_dir, classes, config, sed, random_split)
+    dls.show_batch()
     arch = 'efficientnet_b0'
 
     metrics = [error_rate]
