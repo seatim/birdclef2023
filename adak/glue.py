@@ -13,9 +13,10 @@ def avg_precision(y_pred, y_true, n_classes):
 
 
 class StratifiedSplitter:
-    def __init__(self, test_size, random_state):
+    def __init__(self, test_size, random_state, print_stats=True):
         self.test_size = test_size
         self.random_state = random_state
+        self.print_stats = print_stats
 
     def __call__(self, items, **kwargs):
         if kwargs:
@@ -29,9 +30,11 @@ class StratifiedSplitter:
 
         assert set(train) & set(valid) == set()
         assert len(set(train) | set(valid)) == len(items)
-        print('I: len(train) =', len(train))
-        print('I: len(valid) =', len(valid))
-        print('I: n. classes in train =', len(set(labels[train])))
-        print('I: n. classes in valid =', len(set(labels[valid])))
+
+        if self.print_stats:
+            print('I: len(train) =', len(train))
+            print('I: len(valid) =', len(valid))
+            print('I: n. classes in train =', len(set(labels[train])))
+            print('I: n. classes in valid =', len(set(labels[valid])))
 
         return L(train), L(valid)
