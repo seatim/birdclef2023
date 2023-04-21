@@ -46,7 +46,13 @@ def image_width(audio_play_time, sr, hop_length):
 def images_from_audio(path, cfg, max_frames=None):
     frame_width = image_width(
         cfg.frame_duration, cfg.sample_rate, cfg.hop_length)
-    image = image_from_audio(path, cfg, frame_width if max_frames else None)
+
+    if max_frames:
+        max_width = frame_width + max_frames * cfg.frame_hop_length
+    else:
+        max_width = None
+
+    image = image_from_audio(path, cfg, max_width)
     remainder = image.shape[1] % cfg.frame_hop_length
 
     if cfg.frame_hop_length > frame_width:
