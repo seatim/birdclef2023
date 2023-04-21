@@ -11,8 +11,10 @@ class TrainConfig:
     frame_duration = 5.
     frame_hop_length = (1 + int(frame_duration*sample_rate) // hop_length) // 2
     pad_remainder = True
-    min_examples = 10
-    max_examples = None
+    min_examples_per_class = 10
+    max_examples_per_class = 10000
+    max_paths_per_class = None
+    max_images_per_file = None
     valid_pct = 0.2
     random_seed = None
     use_sed = False
