@@ -1,4 +1,6 @@
 
+import os
+
 import librosa
 import numpy as np
 import soundfile
@@ -13,6 +15,10 @@ def image_from_audio(path, cfg, max_width=None):
     """
     audio, sr = soundfile.read(path)
     assert sr == cfg.sample_rate, (path, sr)
+
+    if os.getenv('FAKE_IMAGE_FROM_AUDIO'):
+        img_width = image_width(len(audio) / sr, sr, cfg.hop_length)
+        return np.zeros((cfg.n_mels, img_width))
 
     if max_width is not None:
         max_samples = (max_width - 1) * cfg.hop_length
