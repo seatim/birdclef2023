@@ -110,6 +110,7 @@ def make_images_for_class(label, paths, images_dir, config, verbose=False):
     assert len(set(parent_label(path) for path in paths)) == 1, list(paths)[0]
 
     if config.max_paths_per_class:
+        np.random.shuffle(paths)
         paths = paths[:config.max_paths_per_class]
     # print(f'Using {len(paths)} paths for {label}')
 
