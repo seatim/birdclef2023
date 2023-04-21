@@ -32,8 +32,8 @@ def create_combined_images_dir(cfg, path, dry_run=False):
     cmd = dry_run_cmd if dry_run else os.system
     cmd(f'mkdir -p {path}')
     print()
-    print('Removing existing files from combined images directory...')
-    cmd(f'find {path} -type f -delete')
+    print('Removing all images from combined images directory...')
+    cmd(f'find {path} -name \*.png -delete')
     print()
     print('Copying images...')
     cmd(f'cp -r {cfg.images_dir}/* {path}')
