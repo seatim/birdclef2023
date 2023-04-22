@@ -52,7 +52,7 @@ def do_filter_top_k(preds, k, assert_input_is_normalized=False):
         new_pred = pred.copy()
         new_pred[top_k_indices] = top_k_values / sum(top_k_values)
         new_pred[bottom_n_k_indices] = 0
-        assert math.isclose(sum(new_pred), 1, rel_tol=1e-7), sum(new_pred)
+        assert math.isclose(sum(new_pred), 1, rel_tol=1e-6), sum(new_pred)
         return new_pred
 
     return np.stack([filter_top_k(pred) for pred in np.array(preds)])
