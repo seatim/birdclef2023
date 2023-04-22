@@ -1,4 +1,5 @@
 
+import os
 import sys
 
 from os.path import exists, join
@@ -7,6 +8,7 @@ import click
 import numpy as np
 
 from fastai.vision.all import load_learner, parent_label, Resize
+from PIL import Image
 
 from adak.config import TrainConfig
 from adak.evaluate import avg_precision_over_subset, do_filter_top_k
@@ -14,8 +16,8 @@ from adak.transform import images_from_audio, image_width
 
 
 def validate_paths(paths, model_classes):
-    if not all(len(path.split('/')) == 2 for path in paths):
-        raise ValueError('audio paths must be relative to audio directory')
+    if not all(os.sep in path for path in paths):
+        raise ValueError('paths must have parent directory as label')
 
     present_classes = set(parent_label(path) for path in paths)
     unknown_classes = present_classes - set(model_classes)
@@ -26,6 +28,34 @@ def validate_paths(paths, model_classes):
               'will be ignored.')
 
     return known_classes, unknown_classes
+
+
+def get_images_from_audio(path, quick, quicker, config, resize):
+    if not exists(path):
+        path = join(config.audio_dir, path)
+
+    if quicker:
+        images = images_from_audio(path, config, 1)
+    else:
+        images = images_from_audio(path, config)
+        if quick:
+            images = images[:1]
+
+    # NB: These operations are pretty fast.  One image flip takes about two
+    # NB: usec, an image multiply takes about 83 usec, and a resize takes
+    # NB: about 42 usec on a test machine.
+    images = [np.flip(img, axis=0) for img in images]
+    images = [np.uint8(255 * img) for img in images]
+    images = [resize(img) for img in images]
+
+    return images
+
+
+def load_image(path):
+    f = Image.open(path)
+    img = np.array(f.getdata(), dtype=np.uint8).reshape(*reversed(f.size))
+    f.close()
+    return img
 
 
 @click.command()
@@ -66,6 +96,7 @@ def main(model_path, audio_dir, quick, quicker, filter_top_k,
     frame_width = image_width(
         config.frame_duration, config.sample_rate, config.hop_length)
     config.frame_hop_length = frame_width
+    expected_img_size = (config.n_mels, frame_width)
 
     n_inferences = n_top1 = n_top5 = 0
 
@@ -82,22 +113,14 @@ def main(model_path, audio_dir, quick, quicker, filter_top_k,
             print(f'I: unknown class {correct_label}, skipping')
         correct_label_index = list(learn.dls.vocab).index(correct_label)
 
-        if not exists(path):
-            path = join(audio_dir, path)
-
-        if quicker:
-            images = images_from_audio(path, config, 1)
+        if path.endswith('.ogg'):
+            images = get_images_from_audio(path, quick, quicker, config, resize)
         else:
-            images = images_from_audio(path, config)
-            if quick:
-                images = images[:1]
+            images = [load_image(path)]
 
-        # NB: These operations are pretty fast.  One image flip takes about two
-        # NB: usec, an image multiply takes about 83 usec, and a resize takes
-        # NB: about 42 usec on a test machine.
-        images = [np.flip(img, axis=0) for img in images]
-        images = [np.uint8(255 * img) for img in images]
-        images = [resize(img) for img in images]
+        if not all(img.shape == expected_img_size for img in images):
+            sys.exit(f'E: image size != {expected_img_size}: {path}, '
+                     f'{list(img.shape for img in images)}')
 
         preds = np.stack([learn.predict(img)[2].numpy() for img in images])
         assert preds.shape[1] == len(classes), preds[0]
