@@ -80,8 +80,10 @@ def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
 @click.option('-e', '--epochs', default=5, show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
+@click.option('-p', '--prune-missing-classes', is_flag=True)
 def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
-         bc22_images_dir, combined_images_dir, epochs, cpu, random_split):
+         bc22_images_dir, combined_images_dir, epochs, cpu, random_split,
+         prune_missing_classes):
 
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
@@ -94,20 +96,28 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         bc22_images_dir=bc22_images_dir)
 
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
-    classes = np.unique(tmd.primary_label)
+    classes = set(tmd.primary_label)
 
     if bc21_images_dir:
         tmd21 = pd.read_csv(join(bc21_images_dir, '..', 'train_metadata.csv'))
-        classes21 = np.unique(tmd21.primary_label)
-        classes = set(classes) | set(classes21)
+        classes |= set(tmd21.primary_label)
 
     if bc22_images_dir:
         tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
-        classes22 = np.unique(tmd22.primary_label)
-        classes = set(classes) | set(classes22)
+        classes |= set(tmd22.primary_label)
 
     create_combined_images_dir(config, combined_images_dir)
-    check_images(config, check_load_images, exit_on_error, combined_images_dir)
+    classes_present = check_images(
+        config, check_load_images, exit_on_error, combined_images_dir)
+
+    missing = classes - classes_present
+    if missing:
+        if prune_missing_classes:
+            classes -= missing
+            print(f'I: removed {len(missing)} missing classes')
+        else:
+            print(f'W: found no examples of {len(missing)} classes.  Consider '
+                  f'using the --prune-missing-classes option to remove them.')
 
     if config.use_sed:
         classes = list(classes) + [SoundEventDetectionFilter.NON_EVENT]

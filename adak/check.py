@@ -65,3 +65,5 @@ def check_images(cfg, check_load_images, exit_on_error, combined_images_dir):
     print(f'I: class count stats (min/mean/max):', min(values), '/',
           '%.1f' % np.mean(list(values)), '/', max(values))
     print(f'I: training on {sum(values)} image files')
+
+    return {name for name, count in class_counts.items() if count}
