@@ -15,6 +15,7 @@ def image_from_audio(path, cfg, max_width=None):
     """
     audio, sr = soundfile.read(path)
     assert sr == cfg.sample_rate, (path, sr)
+    audio = librosa.to_mono(audio)
 
     if os.getenv('FAKE_IMAGE_FROM_AUDIO'):
         img_width = image_width(len(audio) / sr, sr, cfg.hop_length)
