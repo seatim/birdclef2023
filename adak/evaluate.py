@@ -56,3 +56,20 @@ def do_filter_top_k(preds, k, assert_input_is_normalized=False):
         return new_pred
 
     return np.stack([filter_top_k(pred) for pred in np.array(preds)])
+
+
+def apply_threshold(preds, threshold, assert_input_is_normalized=False):
+    if not (0 < threshold < 1):
+        raise ValueError('threshold must be between zero and one')
+
+    def apply_threshold(pred):
+        if assert_input_is_normalized:
+            assert math.isclose(sum(pred), 1, rel_tol=1e-5), sum(pred)
+
+        new_pred = np.where(pred < threshold, 0, pred)
+        if sum(new_pred):
+            new_pred /= sum(new_pred)
+            assert math.isclose(sum(new_pred), 1, rel_tol=1e-6), sum(new_pred)
+        return new_pred
+
+    return np.stack([apply_threshold(pred) for pred in np.array(preds)])

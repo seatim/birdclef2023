@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from adak.evaluate import (avg_precision_over_subset as apos,
-                           do_filter_top_k as dftk)
+                           do_filter_top_k as dftk, apply_threshold)
 
 
 class Test_apos(unittest.TestCase):
@@ -38,3 +38,24 @@ class Test_dftk(unittest.TestCase):
         preds = [[0, 0.1, 0.9], [0.1, 0.7, 0.3]]
         with self.assertRaises(AssertionError):
             dftk(preds, 3, True)
+
+
+class Test_apply_threshold(unittest.TestCase):
+    def test1(self):
+        preds = [[0, 0.1, 0.9], [0.1, 0.7, 0.2]]
+        self.assertEqual(apply_threshold(preds, 0.09).tolist(), preds)
+
+        expected_2 = [[0, 0, 1], [0, 7/9, 2/9]]
+        self.assertTrue(np.isclose(
+            apply_threshold(preds, 0.19), expected_2).all())
+
+        expected_1 = [[0, 0, 1], [0, 1, 0]]
+        self.assertEqual(apply_threshold(preds, 0.5).tolist(), expected_1)
+
+        expected_0 = [[0, 0, 1], [0, 0, 0]]
+        self.assertEqual(apply_threshold(preds, 0.9).tolist(), expected_0)
+
+    def test_assert_input_is_normalized(self):
+        preds = [[0, 0.1, 0.9], [0.1, 0.7, 0.3]]
+        with self.assertRaises(AssertionError):
+            apply_threshold(preds, 0.9, True)
