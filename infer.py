@@ -143,29 +143,32 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
         return avg_precision_over_subset(
             np.vstack(y_pred), np.hstack(y_true), classes, known_classes)
 
-    print(f'average precision score: {ap_score(y_pred):.3f}')
+    best_ap_score = ap_score(y_pred)
+    print(f'average precision score: {best_ap_score:.3f}')
 
     if not no_top_k_filter_sweep:
         ks = (3, 5, 13, 36, 98, 264)
 
-        print()
-        print('average precision score, top-k filter:')
-
         y_pred_ks = [[do_filter_top_k(pred, k) for pred in y_pred] for k in ks]
         ap_scores = [ap_score(y_pred_k) for y_pred_k in y_pred_ks]
-        print(tabulate([ap_scores], headers=[f'k={k}' for k in ks],
-                       floatfmt='.3f'))
+
+        if any(score > best_ap_score for k, score in zip(ks, ap_scores)):
+            i = np.array(ap_scores).argmax()
+            print(f'average precision score, k={ks[i]}: {ap_scores[i]:.3f}')
+        else:
+            print('no better AP scores were found by top-k filtering')
 
     if not no_threshold_sweep:
         ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
 
-        print()
-        print('average precision score, threshold:')
-
         y_pred_ps = [[apply_threshold(pred, p) for pred in y_pred] for p in ps]
         ap_scores = [ap_score(y_pred_p) for y_pred_p in y_pred_ps]
-        print(tabulate([ap_scores], headers=[f'p={p}' for p in ps],
-                       floatfmt='.3f'))
+
+        if any(score > best_ap_score for p, score in zip(ps, ap_scores)):
+            i = np.array(ap_scores).argmax()
+            print(f'average precision score, p={ps[i]}: {ap_scores[i]:.3f}')
+        else:
+            print('no better AP scores were found by thresholding')
 
 
 if __name__ == '__main__':
