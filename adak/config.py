@@ -4,6 +4,7 @@ class TrainConfig:
     audio_dir = 'data/birdclef-2023/train_audio'
     images_dir = 'data/birdclef-2023/train_images'
     bc21_images_dir = 'data/birdclef-2021/train_images'
+    bc22_images_dir = 'data/birdclef-2022/train_images'
     n_mels = 224
     n_fft = 1024
     hop_length = n_fft // 2

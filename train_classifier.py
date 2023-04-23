@@ -37,8 +37,14 @@ def create_combined_images_dir(cfg, path, dry_run=False):
     print()
     print('Copying images...')
     cmd(f'cp -r {cfg.images_dir}/* {path}')
+
     if cfg.bc21_images_dir:
+        print('Copying images...')
         cmd(f'cp -r {cfg.bc21_images_dir}/* {path}')
+
+    if cfg.bc22_images_dir:
+        print('Copying images...')
+        cmd(f'cp -r {cfg.bc22_images_dir}/* {path}')
     print()
 
 
@@ -67,13 +73,15 @@ def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
               show_default=True)
 @click.option('-B', '--bc21-images-dir', default=TrainConfig.bc21_images_dir,
               show_default=True)
+@click.option('-D', '--bc22-images-dir', default=TrainConfig.bc22_images_dir,
+              show_default=True)
 @click.option('-I', '--combined-images-dir',
               default=DEFAULT_COMBINED_IMAGES_DIR, show_default=True)
 @click.option('-e', '--epochs', default=5, show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
 def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
-         combined_images_dir, epochs, cpu, random_split):
+         bc22_images_dir, combined_images_dir, epochs, cpu, random_split):
 
     if not isdir(images_dir):
         sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
@@ -82,7 +90,8 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         sys.exit('E: images_dir and combined_images_dir must be different')
 
     config = TrainConfig.from_dict(
-        images_dir=images_dir, bc21_images_dir=bc21_images_dir)
+        images_dir=images_dir, bc21_images_dir=bc21_images_dir,
+        bc22_images_dir=bc22_images_dir)
 
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = np.unique(tmd.primary_label)
@@ -91,6 +100,11 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         tmd21 = pd.read_csv(join(bc21_images_dir, '..', 'train_metadata.csv'))
         classes21 = np.unique(tmd21.primary_label)
         classes = set(classes) | set(classes21)
+
+    if bc22_images_dir:
+        tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
+        classes22 = np.unique(tmd22.primary_label)
+        classes = set(classes) | set(classes22)
 
     create_combined_images_dir(config, combined_images_dir)
     check_images(config, check_load_images, exit_on_error, combined_images_dir)
