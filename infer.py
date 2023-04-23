@@ -9,6 +9,7 @@ import numpy as np
 
 from fastai.vision.all import load_learner, parent_label, Resize
 from PIL import Image
+from tabulate import tabulate
 
 from adak.config import TrainConfig
 from adak.evaluate import (avg_precision_over_subset, do_filter_top_k,
@@ -72,39 +73,16 @@ def load_image(path):
                    'to those inferred by the --quick option!!!  These images '
                    'are contrast- and brightness-altered variants of those '
                    'inferred by the --quick option.')
-@click.option('-k', '--filter-top-k', type=int,
-              help='drop n-k lowest probability predictions and renormalize '
-                   'the rest')
-@click.option('-K', '--top-k-filter-sweep', is_flag=True)
-@click.option('-p', '--threshold', type=float,
-              help='drop predictions below this value and renormalize the '
-                   'rest')
-@click.option('-P', '--threshold-sweep', is_flag=True)
+@click.option('-K', '--no-top-k-filter-sweep', is_flag=True)
+@click.option('-P', '--no-threshold-sweep', is_flag=True)
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, audio_dir, quick, quicker, filter_top_k,
-         top_k_filter_sweep, threshold, threshold_sweep, verbose):
+def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
+         no_threshold_sweep, verbose):
 
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
     resize = Resize(TrainConfig.n_mels)
     config = TrainConfig.from_dict(audio_dir=audio_dir)
-
-    if filter_top_k is not None:
-        if top_k_filter_sweep:
-            sys.exit('E: choose either --filter-top-k or --top-k-filter-sweep')
-
-        if not (0 < filter_top_k < len(classes)):
-            sys.exit('E: filter_top_k must be > 0 and < n_classes')
-
-    if threshold is not None:
-        if threshold_sweep:
-            sys.exit('E: choose either --threshold or --threshold-sweep')
-
-        if not (0 < threshold < 1):
-            sys.exit('E: threshold must be between 0 and 1')
-
-    if filter_top_k and threshold:
-        sys.exit('E: choose either --filter-top-k or --threshold')
 
     # NB: set frame_hop_length = frame_width.  Overlapping frames are good for
     # NB: training but a waste of time in this context.
@@ -140,17 +118,11 @@ def main(model_path, audio_dir, quick, quicker, filter_top_k,
         preds = np.stack([learn.predict(img)[2].numpy() for img in images])
         assert preds.shape[1] == len(classes), preds[0]
 
-        if filter_top_k:
-            preds = do_filter_top_k(preds, filter_top_k)
-        elif threshold:
-            preds = apply_threshold(preds, threshold)
-
         top5 = [classes[pred.argsort()[-5:]] for pred in preds]
         top1 = [_[-1] for _ in top5]
         if verbose:
             print(f'top five predictions for {path} ({len(preds)} frames):')
             top5preds = [pred[pred.argsort()[-5:]] for pred in preds]
-            from tabulate import tabulate
             print(tabulate([[*a, *b] for a, b in zip(top5, top5preds)],
                            floatfmt=".2f"))
             print()
@@ -167,25 +139,33 @@ def main(model_path, audio_dir, quick, quicker, filter_top_k,
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
 
-    if top_k_filter_sweep:
-        for k in (3, 5, 13, 36, 98, 264):
-            y_pred_k = [do_filter_top_k(pred, k) for pred in y_pred]
-            ap_score = avg_precision_over_subset(
-                np.vstack(y_pred_k), np.hstack(y_true), classes, known_classes)
-            print(f'average precision score, k={k}: {ap_score:.3f}')
-
-    if threshold_sweep:
-        for threshold in (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9):
-            y_pred_t = [apply_threshold(pred, threshold) for pred in y_pred]
-            ap_score = avg_precision_over_subset(
-                np.vstack(y_pred_t), np.hstack(y_true), classes, known_classes)
-            print(f'average precision score, threshold={threshold:.4f}: '
-                  f'{ap_score:.3f}')
-
-    if not (top_k_filter_sweep or threshold_sweep):
-        ap_score = avg_precision_over_subset(
+    def ap_score(y_pred):
+        return avg_precision_over_subset(
             np.vstack(y_pred), np.hstack(y_true), classes, known_classes)
-        print(f'average precision score: {ap_score:.3f}')
+
+    print(f'average precision score: {ap_score(y_pred):.3f}')
+
+    if not no_top_k_filter_sweep:
+        ks = (3, 5, 13, 36, 98, 264)
+
+        print()
+        print('average precision score, top-k filter:')
+
+        y_pred_ks = [[do_filter_top_k(pred, k) for pred in y_pred] for k in ks]
+        ap_scores = [ap_score(y_pred_k) for y_pred_k in y_pred_ks]
+        print(tabulate([ap_scores], headers=[f'k={k}' for k in ks],
+                       floatfmt='.3f'))
+
+    if not no_threshold_sweep:
+        ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
+
+        print()
+        print('average precision score, threshold:')
+
+        y_pred_ps = [[apply_threshold(pred, p) for pred in y_pred] for p in ps]
+        ap_scores = [ap_score(y_pred_p) for y_pred_p in y_pred_ps]
+        print(tabulate([ap_scores], headers=[f'p={p}' for p in ps],
+                       floatfmt='.3f'))
 
 
 if __name__ == '__main__':
