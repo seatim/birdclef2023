@@ -14,7 +14,7 @@ def avg_precision_over_subset(y_pred, y_true, classes, subset):
 
     classes = list(classes)
     subset = list(subset)
-    present_class_indices = [classes.index(label) for label in subset]
+    subset_indices = [classes.index(label) for label in subset]
 
     y_pred = np.array(y_pred)
     y_true = np.array(y_true)
@@ -26,8 +26,8 @@ def avg_precision_over_subset(y_pred, y_true, classes, subset):
     assert y_pred.shape[1] == len(classes), (y_pred.shape, len(classes))
     assert all(idx in range(len(classes)) for idx in y_true)
 
-    y_pred = np.array([pred[present_class_indices] for pred in y_pred])
-    y_true = np.array([present_class_indices.index(idx) for idx in y_true])
+    y_pred = np.array([pred[subset_indices] for pred in y_pred])
+    y_true = np.array([subset_indices.index(idx) for idx in y_true])
 
     assert len(y_pred.shape) == 2, y_pred.shape
     assert len(y_true.shape) == 1, y_true.shape
