@@ -27,8 +27,9 @@ def validate_paths(paths, model_classes):
     known_classes = present_classes - unknown_classes
 
     if unknown_classes:
-        print('W: some classes present in input are not known to model. These '
-              'will be ignored.')
+        print(f'W: {len(unknown_classes)} classes present in input are not '
+              f'known to model. These will be ignored.')
+        print('I: first five unknown classes:', list(unknown_classes)[:5])
 
     return known_classes
 
