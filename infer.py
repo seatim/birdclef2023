@@ -6,6 +6,7 @@ from os.path import exists, join
 
 import click
 import numpy as np
+import pandas as pd
 
 from fastai.vision.all import load_learner, parent_label, Resize
 from PIL import Image
@@ -75,9 +76,13 @@ def load_image(path):
                    'inferred by the --quick option.')
 @click.option('-K', '--no-top-k-filter-sweep', is_flag=True)
 @click.option('-P', '--no-threshold-sweep', is_flag=True)
+@click.option('-s', '--save-preds', help='path to file to save preds to')
 @click.option('-v', '--verbose', is_flag=True)
 def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
-         no_threshold_sweep, verbose):
+         no_threshold_sweep, save_preds, verbose):
+
+    if save_preds and exists(save_preds):
+        sys.exit(f'E: file exists: {save_preds}')
 
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
@@ -174,6 +179,11 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
             print(f'average precision score, p={ps[i]}: {ap_scores[i]:.3f}')
         else:
             print('no better AP scores were found by thresholding')
+
+    if save_preds:
+        df = pd.DataFrame(
+            dict(path=paths, **dict(zip(classes, np.vstack(y_pred).T))))
+        df.to_csv(save_preds)
 
 
 if __name__ == '__main__':
