@@ -30,7 +30,7 @@ def validate_paths(paths, model_classes):
         print('W: some classes present in input are not known to model. These '
               'will be ignored.')
 
-    return known_classes, unknown_classes
+    return known_classes
 
 
 def get_images_from_audio(path, quick, quicker, config, resize):
@@ -103,11 +103,11 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     y_true = []
 
     paths = [line.strip() for line in sys.stdin]
-    known_classes, unknown_classes = validate_paths(paths, classes)
+    known_classes = validate_paths(paths, classes)
 
     for path in paths:
         correct_label = parent_label(path)
-        if correct_label in unknown_classes:
+        if correct_label not in known_classes:
             if verbose:
                 print(f'I: unknown class {correct_label}, skipping')
             continue
