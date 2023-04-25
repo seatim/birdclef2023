@@ -103,7 +103,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     for path in paths:
         correct_label = parent_label(path)
         if correct_label in unknown_classes:
-            print(f'I: unknown class {correct_label}, skipping')
+            if verbose:
+                print(f'I: unknown class {correct_label}, skipping')
+            continue
         correct_label_index = list(learn.dls.vocab).index(correct_label)
 
         if path.endswith('.ogg'):
@@ -133,6 +135,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
         y_pred.append(preds)
         y_true.append([correct_label_index] * len(images))
+
+    if not n_inferences:
+        sys.exit('No inferences were made.')
 
     print('Results:')
     print(f'{n_inferences} inferences')
