@@ -19,8 +19,7 @@ def get_bc23_classes(path):
     return set(tmd.primary_label)
 
 
-def report_essentials(df):
-    n_inferences = len(df.index)
+def get_classes_and_y_vars(df):
     classes = list(df.columns)
     y_pred = df[classes].to_numpy()
     y_true = np.array([classes.index(name)
@@ -28,6 +27,13 @@ def report_essentials(df):
 
     missing = set(range(len(classes))) - set(y_true)
     missing_classes = [classes[k] for k in sorted(missing)]
+    return classes, missing_classes, y_pred, y_true
+
+
+def report_essentials(df):
+    n_inferences = len(df.index)
+    classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
+
     if missing_classes:
         print(f'W: missing examples for {len(missing_classes)} classes.')
         print(f'W: first five are:', missing_classes[:5])
