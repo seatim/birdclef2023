@@ -18,8 +18,12 @@ def get_bc23_classes(path):
 
 def show_dist(series, desc, show_hist):
     print()
+    print()
     print(f'Statistics of {desc}')
-    print(series.describe())
+    print()
+    stats = series.describe()
+    print(tabulate([[int(stats[0])] + list(stats[1:])],
+                   headers=list(stats.index), floatfmt='.3f'))
 
     if show_hist:
         ax = series.hist()
