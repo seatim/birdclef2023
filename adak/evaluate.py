@@ -78,3 +78,12 @@ def apply_threshold(preds, threshold, assert_input_is_normalized=False):
         return new_pred
 
     return np.stack([apply_threshold(pred) for pred in np.array(preds)])
+
+
+def calculate_n_top_n(y_pred, y_true, classes, n):
+    n_samples = _validate_y_args(y_pred, y_true, classes)
+
+    top_n = [pred.argsort()[-n:] for pred in y_pred]
+    assert len(top_n) == n_samples, (len(top_n), n_samples)
+
+    return sum(true_k in top_n_k for true_k, top_n_k in zip(y_true, top_n))

@@ -8,7 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from fastai.data.all import parent_label
 from tabulate import tabulate
+
+from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
 
 
 def get_bc23_classes(path):
@@ -16,14 +19,41 @@ def get_bc23_classes(path):
     return set(tmd.primary_label)
 
 
-def show_dist(series, desc, show_hist):
+def report_essentials(df):
+    n_inferences = len(df.index)
+    classes = list(df.columns)
+    y_pred = df[classes].to_numpy()
+    y_true = np.array([classes.index(name)
+                       for name in (parent_label(path) for path in df.index)])
+
+    missing_indices = set(range(len(classes))) - set(y_true)
+    missing_classes = [classes[k] for k in sorted(missing_indices)]
+    if missing_classes:
+        print(f'W: missing examples for {len(missing_classes)} classes.')
+        print(f'W: first five are:', missing_classes[:5])
+
+    n_top1 = calculate_n_top_n(y_pred, y_true, classes, 1)
+    n_top5 = calculate_n_top_n(y_pred, y_true, classes, 5)
+    ap_score = avg_precision_over_subset(
+        y_pred, y_true, classes, set(classes) - set(missing_classes))
+
     print()
+    print('Results:')
+    print(f'{n_inferences} inferences')
+    print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
+    print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
+    print(f'average precision score: {ap_score:.3f}')
+    print()
+
+
+def show_dist(series, desc, show_hist):
     print()
     print(f'Statistics of {desc}')
     print()
     stats = series.describe()
     print(tabulate([[int(stats[0])] + list(stats[1:])],
                    headers=list(stats.index), floatfmt='.3f'))
+    print()
 
     if show_hist:
         ax = series.hist()
@@ -46,6 +76,8 @@ def main(path, show_hist, threshold):
 
     df = df.set_index('path')
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
+
+    report_essentials(df)
 
     show_dist(df.sum(axis=1), 'sum of predictions over all classes', show_hist)
     show_dist(df[classes].sum(axis=1), 'sum of predictions over bc23 classes',

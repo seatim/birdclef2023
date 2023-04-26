@@ -14,7 +14,7 @@ from tabulate import tabulate
 
 from adak.config import TrainConfig
 from adak.evaluate import (avg_precision_over_subset, do_filter_top_k,
-                           apply_threshold)
+                           apply_threshold, calculate_n_top_n)
 from adak.transform import images_from_audio, image_width
 
 
@@ -165,6 +165,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     y_pred = np.vstack(y_pred)
     y_true = np.hstack(y_true)
+
+    assert n_top1 == calculate_n_top_n(y_pred, y_true, classes, 1)
+    assert n_top5 == calculate_n_top_n(y_pred, y_true, classes, 5)
 
     def ap_score(y_pred):
         return avg_precision_over_subset(
