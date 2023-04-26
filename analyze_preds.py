@@ -42,7 +42,7 @@ def main(path, show_hist, threshold):
 
     df = pd.read_csv(path, index_col=0)
     classes = list(get_bc23_classes(path))
-    assert all(name in df.columns for name in classes), 'missing classes'
+    assert set(classes) - set(df.columns) == set(), 'missing classes'
 
     df = df.set_index('path')
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
