@@ -11,6 +11,7 @@ from .glue import avg_precision
 def avg_precision_over_subset(y_pred, y_true, classes, subset):
     unknown_classes = set(subset) - set(classes)
     assert unknown_classes == set(), unknown_classes
+    assert hasattr(classes, '__getitem__'), 'classes must be ordered'
 
     classes = list(classes)
     subset = list(subset)
