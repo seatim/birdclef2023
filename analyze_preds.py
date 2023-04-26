@@ -26,8 +26,8 @@ def report_essentials(df):
     y_true = np.array([classes.index(name)
                        for name in (parent_label(path) for path in df.index)])
 
-    missing_indices = set(range(len(classes))) - set(y_true)
-    missing_classes = [classes[k] for k in sorted(missing_indices)]
+    missing = set(range(len(classes))) - set(y_true)
+    missing_classes = [classes[k] for k in sorted(missing)]
     if missing_classes:
         print(f'W: missing examples for {len(missing_classes)} classes.')
         print(f'W: first five are:', missing_classes[:5])
