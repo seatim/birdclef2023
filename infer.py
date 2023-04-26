@@ -62,6 +62,19 @@ def load_image(path):
     return img
 
 
+def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
+                         func, desc):
+    y_preds = [func(y_pred, x) for x in values]
+    ap_scores = [ap_score(y_pred_x) for y_pred_x in y_preds]
+
+    if any(score > best_ap_score for x, score in zip(values, ap_scores)):
+        i = np.array(ap_scores).argmax()
+        print(f'average precision score, {param_name}={values[i]}: '
+              f'{ap_scores[i]:.3f}')
+    else:
+        print(f'no better AP scores were found by {desc}')
+
+
 @click.command()
 @click.argument('model_path')
 @click.option('-a', '--audio-dir', default=TrainConfig.audio_dir,
@@ -162,27 +175,13 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     if not no_top_k_filter_sweep:
         ks = (3, 5, 13, 36, 98, 264)
-
-        y_pred_ks = [do_filter_top_k(y_pred, k) for k in ks]
-        ap_scores = [ap_score(y_pred_k) for y_pred_k in y_pred_ks]
-
-        if any(score > best_ap_score for k, score in zip(ks, ap_scores)):
-            i = np.array(ap_scores).argmax()
-            print(f'average precision score, k={ks[i]}: {ap_scores[i]:.3f}')
-        else:
-            print('no better AP scores were found by top-k filtering')
+        sweep_preds_AP_score(y_pred, ap_score, best_ap_score, ks, 'k',
+                             do_filter_top_k, 'top-k filtering')
 
     if not no_threshold_sweep:
         ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
-
-        y_pred_ps = [apply_threshold(y_pred, p) for p in ps]
-        ap_scores = [ap_score(y_pred_p) for y_pred_p in y_pred_ps]
-
-        if any(score > best_ap_score for p, score in zip(ps, ap_scores)):
-            i = np.array(ap_scores).argmax()
-            print(f'average precision score, p={ps[i]}: {ap_scores[i]:.3f}')
-        else:
-            print('no better AP scores were found by thresholding')
+        sweep_preds_AP_score(y_pred, ap_score, best_ap_score, ps, 'p',
+                             apply_threshold, 'thresholding')
 
     if save_preds:
         df = pd.DataFrame(dict(path=paths, **dict(zip(classes, y_pred.T))))
