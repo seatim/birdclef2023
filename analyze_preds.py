@@ -71,8 +71,8 @@ def main(path, show_hist, threshold):
         sys.exit('E: threshold must be between 0 and 1.')
 
     df = pd.read_csv(path, index_col=0)
-    classes = list(get_bc23_classes(path))
-    assert set(classes) - set(df.columns) == set(), 'missing classes'
+    bc23_classes = list(get_bc23_classes(path))
+    assert set(bc23_classes) - set(df.columns) == set(), 'missing bc23 classes'
 
     df = df.set_index('path')
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
@@ -80,16 +80,16 @@ def main(path, show_hist, threshold):
     report_essentials(df)
 
     show_dist(df.sum(axis=1), 'sum of predictions over all classes', show_hist)
-    show_dist(df[classes].sum(axis=1), 'sum of predictions over bc23 classes',
-              show_hist)
+    show_dist(df[bc23_classes].sum(axis=1),
+              'sum of predictions over bc23 classes', show_hist)
 
     show_dist(df.max(axis=1), 'max of predictions over all classes', show_hist)
-    show_dist(df[classes].max(axis=1), 'max of predictions over bc23 classes',
-              show_hist)
+    show_dist(df[bc23_classes].max(axis=1),
+              'max of predictions over bc23 classes', show_hist)
 
     if threshold:
         all_classes = np.array(df.columns)
-        df['sum_bc23'] = df[classes].sum(axis=1)
+        df['sum_bc23'] = df[bc23_classes].sum(axis=1)
         lp = df[df['sum_bc23'] < threshold]
         table = [[path, row['sum_bc23']] for path, row in lp.iterrows()]
 
