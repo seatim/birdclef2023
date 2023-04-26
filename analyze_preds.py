@@ -47,6 +47,10 @@ def main(path, show_hist, threshold):
     show_dist(df[classes].sum(axis=1), 'sum of predictions over bc23 classes',
               show_hist)
 
+    show_dist(df.max(axis=1), 'max of predictions over all classes', show_hist)
+    show_dist(df[classes].max(axis=1), 'max of predictions over bc23 classes',
+              show_hist)
+
     if threshold:
         all_classes = np.array(df.columns)
         df['sum_bc23'] = df[classes].sum(axis=1)
