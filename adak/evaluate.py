@@ -8,6 +8,22 @@ from torch import tensor
 from .glue import avg_precision
 
 
+def _validate_y_args(y_pred, y_true, classes, n_samples=None):
+    assert len(y_pred.shape) == 2, y_pred.shape
+    assert len(y_true.shape) == 1, y_true.shape
+
+    if n_samples is None:
+        n_samples = y_pred.shape[0]
+    else:
+        assert n_samples == y_pred.shape[0], (n_samples, y_pred.shape)
+
+    assert n_samples == len(y_true), (n_samples, len(y_true))
+    assert y_pred.shape[1] == len(classes), (y_pred.shape, len(classes))
+    assert all(idx in range(len(classes)) for idx in y_true)
+
+    return n_samples
+
+
 def avg_precision_over_subset(y_pred, y_true, classes, subset):
     unknown_classes = set(subset) - set(classes)
     assert unknown_classes == set(), unknown_classes
@@ -19,23 +35,11 @@ def avg_precision_over_subset(y_pred, y_true, classes, subset):
 
     y_pred = np.array(y_pred)
     y_true = np.array(y_true)
-
-    assert len(y_pred.shape) == 2, y_pred.shape
-    assert len(y_true.shape) == 1, y_true.shape
-    n_samples = y_pred.shape[0]
-    assert n_samples == len(y_true), (n_samples, len(y_true))
-    assert y_pred.shape[1] == len(classes), (y_pred.shape, len(classes))
-    assert all(idx in range(len(classes)) for idx in y_true)
+    n_samples = _validate_y_args(y_pred, y_true, classes)
 
     y_pred = np.array([pred[subset_indices] for pred in y_pred])
     y_true = np.array([subset_indices.index(idx) for idx in y_true])
-
-    assert len(y_pred.shape) == 2, y_pred.shape
-    assert len(y_true.shape) == 1, y_true.shape
-    assert n_samples == len(y_true), (n_samples, len(y_true))
-    assert n_samples == y_pred.shape[0], (n_samples, y_pred.shape)
-    assert y_pred.shape[1] == len(subset), (y_pred.shape, len(subset))
-    assert all(idx in range(len(subset)) for idx in y_true)
+    _validate_y_args(y_pred, y_true, subset, n_samples)
 
     return avg_precision(y_pred, tensor(y_true), len(subset))
 
