@@ -150,9 +150,12 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
 
+    y_pred = np.vstack(y_pred)
+    y_true = np.hstack(y_true)
+
     def ap_score(y_pred):
         return avg_precision_over_subset(
-            np.vstack(y_pred), np.hstack(y_true), classes, known_classes)
+            y_pred, y_true, classes, known_classes)
 
     best_ap_score = ap_score(y_pred)
     print(f'average precision score: {best_ap_score:.3f}')
@@ -160,7 +163,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     if not no_top_k_filter_sweep:
         ks = (3, 5, 13, 36, 98, 264)
 
-        y_pred_ks = [[do_filter_top_k(pred, k) for pred in y_pred] for k in ks]
+        y_pred_ks = [do_filter_top_k(y_pred, k) for k in ks]
         ap_scores = [ap_score(y_pred_k) for y_pred_k in y_pred_ks]
 
         if any(score > best_ap_score for k, score in zip(ks, ap_scores)):
@@ -172,7 +175,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     if not no_threshold_sweep:
         ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
 
-        y_pred_ps = [[apply_threshold(pred, p) for pred in y_pred] for p in ps]
+        y_pred_ps = [apply_threshold(y_pred, p) for p in ps]
         ap_scores = [ap_score(y_pred_p) for y_pred_p in y_pred_ps]
 
         if any(score > best_ap_score for p, score in zip(ps, ap_scores)):
@@ -182,8 +185,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
             print('no better AP scores were found by thresholding')
 
     if save_preds:
-        df = pd.DataFrame(
-            dict(path=paths, **dict(zip(classes, np.vstack(y_pred).T))))
+        df = pd.DataFrame(dict(path=paths, **dict(zip(classes, y_pred.T))))
         df.to_csv(save_preds)
 
 
