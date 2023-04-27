@@ -98,7 +98,7 @@ def report_sweeps(df):
     sweep_preds_AP_score(
         y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter')
 
-    ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
+    ps = list(reversed((1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)))
     sweep_preds_AP_score(
         y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold')
 
