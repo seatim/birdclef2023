@@ -20,7 +20,6 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
 from adak.check import check_images
 from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
-from adak.sed import SoundEventDetectionFilter, bind_alt
 
 DEFAULT_COMBINED_IMAGES_DIR = 'data/train_images.combined'
 
@@ -48,18 +47,17 @@ def create_combined_images_dir(cfg, path, dry_run=False):
     print()
 
 
-def get_data_loader(path, vocab, cfg, sed, random_split, img_cls=PILImageBW):
+def get_data_loader(path, vocab, cfg, random_split, img_cls=PILImageBW):
 
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
     batch_tfms = [Brightness(0.8), Contrast(0.8)]
-    get_y = bind_alt(sed.get_y) if sed else parent_label
 
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
                        splitter=splitter,
-                       get_y=get_y,
+                       get_y=parent_label,
                        item_tfms=item_tfms,
                        batch_tfms=batch_tfms)
 
@@ -119,15 +117,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
             print(f'W: found no examples of {len(missing)} classes.  Consider '
                   f'using the --prune-missing-classes option to remove them.')
 
-    if config.use_sed:
-        classes = list(classes) + [SoundEventDetectionFilter.NON_EVENT]
-        sed = SoundEventDetectionFilter()
-        cbs = [sed]
-    else:
-        sed = cbs = None
-
-    dls = get_data_loader(
-        combined_images_dir, classes, config, sed, random_split)
+    dls = get_data_loader(combined_images_dir, classes, config, random_split)
     dls.show_batch()
     arch = 'efficientnet_b0'
 
@@ -142,7 +132,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
         metrics.append(ap_score)
 
-    learn = vision_learner(dls, arch, metrics=metrics, cbs=cbs)
+    learn = vision_learner(dls, arch, metrics=metrics)
     if not cpu:
         learn = learn.to_fp16()
 
