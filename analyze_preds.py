@@ -153,8 +153,9 @@ def show_dist(series, desc, show_hist):
 @click.argument('path')
 @click.option('-s', '--show-hist', is_flag=True)
 @click.option('-S', '--show-stats', is_flag=True)
+@click.option('-r', '--report-sweeps', 'do_sweeps', is_flag=True)
 @click.option('-p', '--threshold', type=float)
-def main(path, show_hist, show_stats, threshold):
+def main(path, show_hist, show_stats, do_sweeps, threshold):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
@@ -167,7 +168,9 @@ def main(path, show_hist, show_stats, threshold):
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
 
     report_essentials(df, bc23_classes)
-    report_sweeps(df, bc23_classes)
+
+    if do_sweeps:
+        report_sweeps(df, bc23_classes)
 
     if show_stats:
         show_dist(df.sum(axis=1),
