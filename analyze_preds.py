@@ -12,7 +12,8 @@ from fastai.data.all import parent_label
 from tabulate import tabulate
 
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
-                           do_filter_top_k, apply_threshold)
+                           do_filter_top_k, apply_threshold,
+                           slice_by_class_subset)
 
 
 def get_bc23_classes(path):
@@ -31,7 +32,7 @@ def get_classes_and_y_vars(df):
     return classes, missing_classes, y_pred, y_true
 
 
-def report_essentials(df):
+def report_essentials(df, bc23_classes):
     n_inferences = len(df.index)
     classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
 
@@ -45,12 +46,34 @@ def report_essentials(df):
         y_pred, y_true, classes, set(classes) - set(missing_classes))
 
     print()
-    print('Results:')
-    print(f'{n_inferences} inferences')
+    if set(classes) == set(bc23_classes):
+        print('Results:')
+        print(f'{n_inferences} inferences')
+    else:
+        print(f'{n_inferences} inferences')
+        print()
+        print('Results for all classes:')
+
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
     print(f'average precision score: {ap_score:.3f}')
     print()
+
+    if set(classes) != set(bc23_classes):
+        y_pred_b, y_true_b = slice_by_class_subset(
+            y_pred, y_true, classes, bc23_classes)
+
+        n_top1_b = calculate_n_top_n(y_pred_b, y_true_b, bc23_classes, 1)
+        n_top5_b = calculate_n_top_n(y_pred_b, y_true_b, bc23_classes, 5)
+
+        ap_score_b = avg_precision_over_subset(
+            y_pred, y_true, classes, set(bc23_classes) - set(missing_classes))
+
+        print('Results for bc23 classes:')
+        print(f'{n_top1_b} top 1 correct {100 * n_top1_b / n_inferences:.1f}%')
+        print(f'{n_top5_b} top 5 correct {100 * n_top5_b / n_inferences:.1f}%')
+        print(f'average precision score: {ap_score_b:.3f}')
+        print()
 
 
 def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
@@ -112,7 +135,7 @@ def main(path, show_hist, show_stats, threshold):
     df = df.set_index('path')
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
 
-    report_essentials(df)
+    report_essentials(df, bc23_classes)
     report_sweeps(df)
 
     if show_stats:
