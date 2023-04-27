@@ -14,7 +14,7 @@ from tabulate import tabulate
 
 from adak.config import TrainConfig
 from adak.evaluate import (avg_precision_over_subset, do_filter_top_k,
-                           apply_threshold, calculate_n_top_n)
+                           fine_threshold, calculate_n_top_n)
 from adak.transform import images_from_audio, image_width
 
 
@@ -179,12 +179,12 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     if not no_top_k_filter_sweep:
         ks = (3, 5, 13, 36, 98, 264)
         sweep_preds_AP_score(y_pred, ap_score, best_ap_score, ks, 'k',
-                             do_filter_top_k, 'top-k filtering')
+                             do_filter_top_k, 'top-k filter')
 
     if not no_threshold_sweep:
         ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
         sweep_preds_AP_score(y_pred, ap_score, best_ap_score, ps, 'p',
-                             apply_threshold, 'thresholding')
+                             fine_threshold, 'fine threshold')
 
     if save_preds:
         df = pd.DataFrame(dict(path=paths, **dict(zip(classes, y_pred.T))))

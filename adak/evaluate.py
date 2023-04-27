@@ -68,11 +68,11 @@ def do_filter_top_k(preds, k, assert_input_is_normalized=False):
     return np.stack([filter_top_k(pred) for pred in np.array(preds)])
 
 
-def apply_threshold(preds, threshold, assert_input_is_normalized=False):
+def fine_threshold(preds, threshold, assert_input_is_normalized=False):
     if not (0 < threshold < 1):
         raise ValueError('threshold must be between zero and one')
 
-    def apply_threshold(pred):
+    def fine_threshold(pred):
         if assert_input_is_normalized:
             assert math.isclose(sum(pred), 1, rel_tol=1e-5), sum(pred)
 
@@ -82,7 +82,7 @@ def apply_threshold(preds, threshold, assert_input_is_normalized=False):
             assert math.isclose(sum(new_pred), 1, rel_tol=1e-6), sum(new_pred)
         return new_pred
 
-    return np.stack([apply_threshold(pred) for pred in np.array(preds)])
+    return np.stack([fine_threshold(pred) for pred in np.array(preds)])
 
 
 def calculate_n_top_n(y_pred, y_true, classes, n):

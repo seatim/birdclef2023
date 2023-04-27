@@ -12,7 +12,7 @@ from fastai.data.all import parent_label
 from tabulate import tabulate
 
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
-                           do_filter_top_k, apply_threshold,
+                           do_filter_top_k, fine_threshold,
                            slice_by_class_subset)
 
 
@@ -96,11 +96,11 @@ def report_sweeps(df):
 
     ks = (3, 5, 13, 36, 98, 264)
     sweep_preds_AP_score(
-        y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filtering')
+        y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter')
 
     ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', apply_threshold, 'thresholding')
+        y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold')
 
 
 def show_dist(series, desc, show_hist):
