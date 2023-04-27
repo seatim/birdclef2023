@@ -1,4 +1,5 @@
 
+import os
 import sys
 
 from os.path import dirname, join
@@ -14,6 +15,10 @@ from tabulate import tabulate
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
                            do_filter_top_k, fine_threshold, sum_filter,
                            max_filter, slice_by_class_subset)
+
+
+def short_name(row):
+    return os.sep.join(row.path.split(os.sep)[-2:])
 
 
 def get_bc23_classes(path):
@@ -169,7 +174,9 @@ def report_class_stats(df, show_hist):
 @click.option('-r', '--report-sweeps', 'do_sweeps', is_flag=True)
 @click.option('-R', '--report-class-stats', 'do_class_stats', is_flag=True)
 @click.option('-p', '--threshold', type=float)
-def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold):
+@click.option('-e', '--list-nse-candidates', is_flag=True)
+def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
+         list_nse_candidates):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
@@ -178,8 +185,10 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold):
     bc23_classes = list(get_bc23_classes(path))
     assert set(bc23_classes) - set(df.columns) == set(), 'missing bc23 classes'
 
-    df = df.set_index('path')
-    assert sum(df.index.duplicated()) == 0, 'path column is not unique'
+    df['short_name'] = df.apply(short_name, axis=1)
+    df = df.drop('path', axis=1)
+    df = df.set_index('short_name')
+    assert sum(df.index.duplicated()) == 0, 'short_name column is not unique'
 
     report_essentials(df, bc23_classes)
 
@@ -224,6 +233,19 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold):
             top5preds = list(row[top5])
             print(tabulate([top5 + [f'{p:.4f}' for p in top5preds]]))
             print()
+
+    if list_nse_candidates:
+        df['sum_bc23'] = df[bc23_classes].sum(axis=1)
+        df['max_bc23'] = df[bc23_classes].max(axis=1)
+
+        print()
+        print('Examples with lowest sum of bc23 predictions:')
+        print(df['sum_bc23'].sort_values().head(5))
+        print()
+        print()
+        print('Examples with lowest max of bc23 predictions:')
+        print(df['max_bc23'].sort_values().head(5))
+        print()
 
 
 if __name__ == '__main__':
