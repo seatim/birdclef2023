@@ -16,7 +16,7 @@ from fastai.data.all import get_files, parent_label
 from sklearn.utils import resample
 from PIL import Image
 
-from adak.config import TrainConfig
+from adak.config import MakeImagesConfig
 from adak.glue import StratifiedSplitter
 from adak.transform import images_from_audio, EmptyImage
 
@@ -175,9 +175,9 @@ def make_images(split_name, audio_files, images_dir, cfg, verbose=False):
 
 
 @click.command()
-@click.option('-a', '--audio-dir', default=TrainConfig.audio_dir,
+@click.option('-a', '--audio-dir', default=MakeImagesConfig.audio_dir,
               show_default=True)
-@click.option('-i', '--images-dir', default=TrainConfig.images_dir,
+@click.option('-i', '--images-dir', default=MakeImagesConfig.images_dir,
               show_default=True)
 @click.option('-m', '--max-images-per-file', type=int)
 @click.option('-M', '--max-paths-per-class', type=int)
@@ -192,7 +192,7 @@ def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
     if 'train' not in basename(images_dir):
         sys.exit(f'E: images_dir must have "train" in its name.')
 
-    config = TrainConfig.from_dict(
+    config = MakeImagesConfig.from_dict(
         audio_dir=audio_dir, images_dir=images_dir,
         max_images_per_file=max_images_per_file,
         max_paths_per_class=max_paths_per_class)

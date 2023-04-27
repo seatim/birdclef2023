@@ -12,7 +12,7 @@ from fastai.vision.all import load_learner, parent_label, Resize
 from PIL import Image
 from tabulate import tabulate
 
-from adak.config import TrainConfig
+from adak.config import InferenceConfig
 from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
 from adak.filter import do_filter_top_k, fine_threshold
 from adak.transform import images_from_audio, image_width
@@ -77,7 +77,7 @@ def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
 
 @click.command()
 @click.argument('model_path')
-@click.option('-a', '--audio-dir', default=TrainConfig.audio_dir,
+@click.option('-a', '--audio-dir', default=InferenceConfig.audio_dir,
               show_default=True)
 @click.option('-q', '--quick', is_flag=True,
               help='infer only first image of each audio file')
@@ -100,15 +100,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
-    resize = Resize(TrainConfig.n_mels)
-    config = TrainConfig.from_dict(audio_dir=audio_dir)
-
-    # NB: set frame_hop_length = frame_width.  Overlapping frames are good for
-    # NB: training but a waste of time in this context.
-    frame_width = image_width(
-        config.frame_duration, config.sample_rate, config.hop_length)
-    config.frame_hop_length = frame_width
-    expected_img_size = (config.n_mels, frame_width)
+    resize = Resize(InferenceConfig.n_mels)
+    config = InferenceConfig.from_dict(audio_dir=audio_dir)
+    expected_img_size = (config.n_mels, config.frame_width)
 
     n_inferences = n_top1 = n_top5 = 0
 

@@ -18,8 +18,7 @@ def image_from_audio(path, cfg, max_width=None):
     audio = librosa.to_mono(audio)
 
     if os.getenv('FAKE_IMAGE_FROM_AUDIO'):
-        img_width = image_width(len(audio) / sr, sr, cfg.hop_length)
-        return np.zeros((cfg.n_mels, img_width))
+        return np.zeros((cfg.n_mels, cfg.image_width(len(audio) / sr)))
 
     if max_width is not None:
         max_samples = (max_width - 1) * cfg.hop_length
@@ -45,18 +44,15 @@ def image_width(audio_play_time, sr, hop_length):
 
 
 def images_from_audio(path, cfg, max_frames=None):
-    frame_width = image_width(
-        cfg.frame_duration, cfg.sample_rate, cfg.hop_length)
-
     if max_frames:
-        max_width = frame_width + max_frames * cfg.frame_hop_length
+        max_width = cfg.frame_width + max_frames * cfg.frame_hop_length
     else:
         max_width = None
 
     image = image_from_audio(path, cfg, max_width)
     remainder = image.shape[1] % cfg.frame_hop_length
 
-    if cfg.frame_hop_length > frame_width:
+    if cfg.frame_hop_length > cfg.frame_width:
         raise ValueError('frame_hop_length must be <= frame_width')
 
     if remainder and cfg.pad_remainder:
@@ -69,12 +65,12 @@ def images_from_audio(path, cfg, max_frames=None):
 
     def frame(k):
         offset = k * cfg.frame_hop_length
-        end = offset + frame_width
+        end = offset + cfg.frame_width
 
         if end <= image.shape[1]:
             return image[:, offset:end]
         else:
-            assert cfg.frame_hop_length != frame_width, \
+            assert cfg.frame_hop_length != cfg.frame_width, \
                 'if frame_hop_length == frame_width this should not happen'
 
             if not cfg.pad_remainder:

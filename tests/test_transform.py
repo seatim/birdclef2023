@@ -10,8 +10,8 @@ import numpy as np
 
 from parameterized import parameterized
 
-from adak.config import TrainConfig
-from adak.transform import image_from_audio, image_width, images_from_audio
+from adak.config import BaseConfig
+from adak.transform import image_from_audio, images_from_audio
 
 TEST_AUDIO_PATH = join(dirname(__file__), 'data', 'XC503001.ogg')
 TEST_AUDIO_PLAY_TIME = 80.822
@@ -26,41 +26,47 @@ class MaskWarnings(unittest.TestCase):
             action='ignore', category=DeprecationWarning,
             message='Deprecated call to `pkg_resources.declare_namespace')
 
-        self.config = TrainConfig()
+        self.config = BaseConfig()
 
-    def image_width(self, audio_play_time):
-        return image_width(audio_play_time, self.config.sample_rate,
-                           self.config.hop_length)
+
+class RealFrameHopFactor(BaseConfig):
+    def __init__(self, frame_duration, factor):
+        self.frame_duration = frame_duration
+        self.factor = factor
+
+    @property
+    def frame_hop_length(self):
+        return int(self.image_width(self.frame_duration) / self.factor)
+
+
+class BadFrameHopLength(BaseConfig):
+    @property
+    def frame_hop_length(self):
+        return self.image_width(self.frame_duration) + 1
 
 
 class Test_image_from_audio(MaskWarnings):
     def test1(self):
         img = image_from_audio(TEST_AUDIO_PATH, self.config)
-        expected_img_width = self.image_width(TEST_AUDIO_PLAY_TIME)
+        expected_img_width = self.config.image_width(TEST_AUDIO_PLAY_TIME)
         self.assertEqual(img.shape, (self.config.n_mels, expected_img_width))
 
 
 class Test_images_from_audio(MaskWarnings):
     @parameterized.expand(product((3, 5., 11.1, 81.1), (1, 2, 2.5)))
     def test1(self, frame_duration, oversample_factor):
-        self.config.frame_duration = frame_duration
-        self.config.frame_hop_length = frame_hop_length = \
-            int(self.image_width(frame_duration) / oversample_factor)
+        self.config = RealFrameHopFactor(frame_duration, oversample_factor)
 
         imgs = np.array(images_from_audio(TEST_AUDIO_PATH, self.config))
-        orig_img_width = self.image_width(TEST_AUDIO_PLAY_TIME)
-        frame_img_width = self.image_width(frame_duration)
-        expected_n_imgs = math.ceil(orig_img_width / frame_hop_length)
+        img_width = self.config.image_width(TEST_AUDIO_PLAY_TIME)
+        expected_n_imgs = math.ceil(img_width / self.config.frame_hop_length)
 
         self.assertEqual(imgs.shape,
-            (expected_n_imgs, self.config.n_mels, frame_img_width))
+            (expected_n_imgs, self.config.n_mels, self.config.frame_width))
 
     def test_bad_frame_hop_length(self):
-        frame_duration = self.config.frame_duration
-        self.config.frame_hop_length = self.image_width(frame_duration) + 1
-
         with self.assertRaises(ValueError):
-            np.array(images_from_audio(TEST_AUDIO_PATH, self.config))
+            np.array(images_from_audio(TEST_AUDIO_PATH, BadFrameHopLength()))
 
     @parameterized.expand((1, 2, 3))
     def test_max_frames(self, max_frames):
