@@ -98,8 +98,9 @@ def show_dist(series, desc, show_hist):
 @click.command()
 @click.argument('path')
 @click.option('-s', '--show-hist', is_flag=True)
+@click.option('-S', '--show-stats', is_flag=True)
 @click.option('-p', '--threshold', type=float)
-def main(path, show_hist, threshold):
+def main(path, show_hist, show_stats, threshold):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
@@ -114,13 +115,16 @@ def main(path, show_hist, threshold):
     report_essentials(df)
     report_sweeps(df)
 
-    show_dist(df.sum(axis=1), 'sum of predictions over all classes', show_hist)
-    show_dist(df[bc23_classes].sum(axis=1),
-              'sum of predictions over bc23 classes', show_hist)
+    if show_stats:
+        show_dist(df.sum(axis=1),
+                  'sum of predictions over all classes', show_hist)
+        show_dist(df[bc23_classes].sum(axis=1),
+                  'sum of predictions over bc23 classes', show_hist)
 
-    show_dist(df.max(axis=1), 'max of predictions over all classes', show_hist)
-    show_dist(df[bc23_classes].max(axis=1),
-              'max of predictions over bc23 classes', show_hist)
+        show_dist(df.max(axis=1),
+                  'max of predictions over all classes', show_hist)
+        show_dist(df[bc23_classes].max(axis=1),
+                  'max of predictions over bc23 classes', show_hist)
 
     if threshold:
         all_classes = np.array(df.columns)
