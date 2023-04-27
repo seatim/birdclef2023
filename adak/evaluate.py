@@ -24,7 +24,7 @@ def _validate_y_args(y_pred, y_true, classes, n_samples=None):
     return n_samples
 
 
-def avg_precision_over_subset(y_pred, y_true, classes, subset):
+def slice_by_class_subset(y_pred, y_true, classes, subset):
     unknown_classes = set(subset) - set(classes)
     assert unknown_classes == set(), unknown_classes
     assert hasattr(classes, '__getitem__'), 'classes must be ordered'
@@ -41,6 +41,11 @@ def avg_precision_over_subset(y_pred, y_true, classes, subset):
     y_true = np.array([subset_indices.index(idx) for idx in y_true])
     _validate_y_args(y_pred, y_true, subset, n_samples)
 
+    return y_pred, y_true
+
+
+def avg_precision_over_subset(y_pred, y_true, classes, subset):
+    y_pred, y_true = slice_by_class_subset(y_pred, y_true, classes, subset)
     return avg_precision(y_pred, tensor(y_true), len(subset))
 
 
