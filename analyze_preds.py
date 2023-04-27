@@ -149,13 +149,27 @@ def show_dist(series, desc, show_hist):
         plt.show()
 
 
+def report_class_stats(df, show_hist):
+    classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
+    stats = [(name, np.mean(preds), max(preds))
+             for name, preds in zip(classes, y_pred.T)]
+    print()
+    print('Class statistics:')
+    print()
+    print(tabulate(stats, headers=('name', 'mean', 'max')))
+    print()
+
+    show_dist(df.max(axis=0), 'max of predictions over examples', show_hist)
+
+
 @click.command()
 @click.argument('path')
 @click.option('-s', '--show-hist', is_flag=True)
 @click.option('-S', '--show-stats', is_flag=True)
 @click.option('-r', '--report-sweeps', 'do_sweeps', is_flag=True)
+@click.option('-R', '--report-class-stats', 'do_class_stats', is_flag=True)
 @click.option('-p', '--threshold', type=float)
-def main(path, show_hist, show_stats, do_sweeps, threshold):
+def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
@@ -182,6 +196,9 @@ def main(path, show_hist, show_stats, do_sweeps, threshold):
                   'max of predictions over all classes', show_hist)
         show_dist(df[bc23_classes].max(axis=1),
                   'max of predictions over bc23 classes', show_hist)
+
+    if do_class_stats:
+        report_class_stats(df, show_hist)
 
     if threshold:
         all_classes = np.array(df.columns)
