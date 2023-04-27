@@ -12,8 +12,8 @@ from fastai.data.all import parent_label
 from tabulate import tabulate
 
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
-                           do_filter_top_k, fine_threshold,
-                           slice_by_class_subset)
+                           do_filter_top_k, fine_threshold, sum_filter,
+                           max_filter, slice_by_class_subset)
 
 
 def get_bc23_classes(path):
@@ -87,7 +87,7 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
     print()
 
 
-def report_sweeps(df):
+def report_sweeps(df, bc23_classes):
     classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
 
     def ap_score(y_pred):
@@ -101,6 +101,37 @@ def report_sweeps(df):
     ps = list(reversed((1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)))
     sweep_preds_AP_score(
         y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold')
+
+    sweep_preds_AP_score(
+        y_pred, ap_score, ps, 'p', sum_filter, 'sum filter')
+
+    sweep_preds_AP_score(
+        y_pred, ap_score, ps, 'p', max_filter, 'max filter')
+
+    if set(classes) != set(bc23_classes):
+        y_pred_b, y_true_b = slice_by_class_subset(
+            y_pred, y_true, classes, bc23_classes)
+
+        def ap_score_b(y_pred):
+            return avg_precision_over_subset(
+                y_pred, y_true_b, bc23_classes,
+                set(bc23_classes) - set(missing_classes))
+
+        sweep_preds_AP_score(
+            y_pred_b, ap_score_b, ks, 'k', do_filter_top_k,
+            'top-k filter over bc23 classes')
+
+        sweep_preds_AP_score(
+            y_pred_b, ap_score_b, ps, 'p', fine_threshold,
+            'fine threshold over bc23 classes')
+
+        sweep_preds_AP_score(
+            y_pred_b, ap_score_b, ps, 'p', sum_filter,
+            'sum filter over bc23 classes')
+
+        sweep_preds_AP_score(
+            y_pred_b, ap_score_b, ps, 'p', max_filter,
+            'max filter over bc23 classes')
 
 
 def show_dist(series, desc, show_hist):
@@ -136,7 +167,7 @@ def main(path, show_hist, show_stats, threshold):
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
 
     report_essentials(df, bc23_classes)
-    report_sweeps(df)
+    report_sweeps(df, bc23_classes)
 
     if show_stats:
         show_dist(df.sum(axis=1),
