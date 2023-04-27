@@ -187,15 +187,20 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold):
         report_sweeps(df, bc23_classes)
 
     if show_stats:
+        all_classes = np.array(df.columns)
+        qualifier = 'all ' if set(all_classes) != set(bc23_classes) else ''
+
         show_dist(df.sum(axis=1),
-                  'sum of predictions over all classes', show_hist)
-        show_dist(df[bc23_classes].sum(axis=1),
-                  'sum of predictions over bc23 classes', show_hist)
+                  f'sum of predictions over {qualifier}classes', show_hist)
+        if set(all_classes) != set(bc23_classes):
+            show_dist(df[bc23_classes].sum(axis=1),
+                      'sum of predictions over bc23 classes', show_hist)
 
         show_dist(df.max(axis=1),
-                  'max of predictions over all classes', show_hist)
-        show_dist(df[bc23_classes].max(axis=1),
-                  'max of predictions over bc23 classes', show_hist)
+                  f'max of predictions over {qualifier}classes', show_hist)
+        if set(all_classes) != set(bc23_classes):
+            show_dist(df[bc23_classes].max(axis=1),
+                      'max of predictions over bc23 classes', show_hist)
 
     if do_class_stats:
         report_class_stats(df, show_hist)
