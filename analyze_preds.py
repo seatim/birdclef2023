@@ -11,7 +11,8 @@ import pandas as pd
 from fastai.data.all import parent_label
 from tabulate import tabulate
 
-from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
+from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
+                           do_filter_top_k, apply_threshold)
 
 
 def get_bc23_classes(path):
@@ -52,6 +53,33 @@ def report_essentials(df):
     print()
 
 
+def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
+    y_preds = [func(y_pred, x) for x in values]
+    ap_scores = [ap_score(y_pred_x) for y_pred_x in y_preds]
+
+    print()
+    print(f'AP scores for {desc}:')
+    print()
+    print(tabulate([ap_scores], headers=values))
+    print()
+
+
+def report_sweeps(df):
+    classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
+
+    def ap_score(y_pred):
+        return avg_precision_over_subset(
+            y_pred, y_true, classes, set(classes) - set(missing_classes))
+
+    ks = (3, 5, 13, 36, 98, 264)
+    sweep_preds_AP_score(
+        y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filtering')
+
+    ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
+    sweep_preds_AP_score(
+        y_pred, ap_score, ps, 'p', apply_threshold, 'thresholding')
+
+
 def show_dist(series, desc, show_hist):
     print()
     print(f'Statistics of {desc}')
@@ -84,6 +112,7 @@ def main(path, show_hist, threshold):
     assert sum(df.index.duplicated()) == 0, 'path column is not unique'
 
     report_essentials(df)
+    report_sweeps(df)
 
     show_dist(df.sum(axis=1), 'sum of predictions over all classes', show_hist)
     show_dist(df[bc23_classes].sum(axis=1),
