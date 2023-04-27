@@ -13,8 +13,8 @@ from PIL import Image
 from tabulate import tabulate
 
 from adak.config import TrainConfig
-from adak.evaluate import (avg_precision_over_subset, do_filter_top_k,
-                           fine_threshold, calculate_n_top_n)
+from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
+from adak.filter import do_filter_top_k, fine_threshold
 from adak.transform import images_from_audio, image_width
 
 

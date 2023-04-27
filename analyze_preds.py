@@ -13,8 +13,8 @@ from fastai.data.all import parent_label
 from tabulate import tabulate
 
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
-                           do_filter_top_k, fine_threshold, sum_filter,
-                           max_filter, slice_by_class_subset)
+                           slice_by_class_subset)
+from adak.filter import do_filter_top_k, fine_threshold, sum_filter, max_filter
 
 
 def short_name(row):
