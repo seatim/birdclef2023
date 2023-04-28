@@ -6,7 +6,7 @@ import sys
 
 from collections import defaultdict
 from itertools import chain
-from os.path import basename, exists, join
+from os.path import basename, exists, join, normpath
 from pathlib import Path
 
 import click
@@ -189,7 +189,7 @@ def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
     if exists(images_dir) and not force_overwrite:
         sys.exit(f'E: {images_dir} exists.  Use "-f" to overwrite it.')
 
-    if 'train' not in basename(images_dir):
+    if 'train' not in basename(normpath(images_dir)):
         sys.exit(f'E: images_dir must have "train" in its name.')
 
     config = MakeImagesConfig.from_dict(
