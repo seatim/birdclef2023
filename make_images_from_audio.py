@@ -20,8 +20,6 @@ from adak.config import MakeImagesConfig
 from adak.glue import StratifiedSplitter
 from adak.transform import images_from_audio, EmptyImage
 
-SAMPLE_FROM_ALL_FILES_RETRIES = 5
-
 
 def save_image(img, path):
     img = np.flip(img, axis=0)
@@ -60,7 +58,8 @@ def train_val_split(paths, cfg):
     return paths[train], paths[val]
 
 
-def get_image_addresses(images_by_path, n_images_total, n_samples, label):
+def get_image_addresses(images_by_path, n_images_total, n_samples, label,
+                        config):
     paths = set(images_by_path.keys())
 
     def addresses_for_path(path):
@@ -81,7 +80,7 @@ def get_image_addresses(images_by_path, n_images_total, n_samples, label):
     replace = n_images_total < n_samples
     retries = 0
 
-    while retries < SAMPLE_FROM_ALL_FILES_RETRIES:
+    while retries < config.sample_retries:
         image_addresses = resample(
             all_addresses, n_samples=n_samples, replace=replace)
 
@@ -94,9 +93,9 @@ def get_image_addresses(images_by_path, n_images_total, n_samples, label):
         else:
             break
 
-    if retries == SAMPLE_FROM_ALL_FILES_RETRIES:
-        print(f'W: failed after {SAMPLE_FROM_ALL_FILES_RETRIES} retries '
-              f'to sample from all {len(paths)} files for class {label}')
+    if retries == config.sample_retries:
+        print(f'W: failed after {config.sample_retries} retries to sample '
+              f'from all {len(paths)} files for class {label}')
 
     return image_addresses
 
@@ -131,7 +130,7 @@ def make_images_for_class(label, paths, images_dir, config, verbose=False):
                     max(config.min_examples_per_class, n_images_total))
 
     sample_addresses = get_image_addresses(
-        images_by_path, n_images_total, n_samples, label)
+        images_by_path, n_images_total, n_samples, label, config)
 
     indices_by_path = defaultdict(list)
     for path, index in sample_addresses:

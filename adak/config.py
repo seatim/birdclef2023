@@ -35,6 +35,7 @@ class MakeImagesConfig(BaseConfig):
     max_examples_per_class = 10000
     max_paths_per_class = None
     max_images_per_file = None
+    sample_retries = 5
 
 
 class TrainConfig(BaseConfig):
