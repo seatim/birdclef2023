@@ -64,20 +64,22 @@ Note, the training program will copy images from the input sets into a
 default.  The model produced by the training will be saved to this directory
 also.
 
-### Infer images
+### Evaluate a model
 
-Use `infer.py` to evaluate a classifier.  `infer.py` reads file names from
-standard input and outputs performance metrics.
+Use `evaluate.py` to evaluate a classifier.  `evaluate.py` reads file names
+from standard input, uses a given model to classify each image, and outputs
+performance metrics.  Note that the class label of each image file is given
+by its parent directory.
 
 For example, to evaluate a classifier on the validation set created earlier,
 run this bash command:
 
-    find val_images.m5.M5/ -type f | python infer.py PATH_TO_MODEL
+    find val_images.m5.M5/ -type f | python evaluate.py PATH_TO_MODEL
 
 Note, the predictions made by the classifier can be saved to a file for later
 analysis using the `--save-preds` (`-s`) option.  For example:
 
-    find val_images.m5.M5/ -type f | python infer.py PATH_TO_MODEL -s test1.csv
+    find val_images.m5.M5/ -type f | python evaluate.py PATH_TO_MODEL -s test1.csv
 
 ### Analyze predictions
 
