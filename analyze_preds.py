@@ -1,6 +1,7 @@
 
 import os
 import sys
+import warnings
 
 from os.path import dirname, join
 
@@ -37,9 +38,17 @@ def get_classes_and_y_vars(df):
     return classes, missing_classes, y_pred, y_true
 
 
+def add_df_attrs(df):
+    attrs = 'classes', 'missing_classes', 'y_pred', 'y_true'
+    assert all(not hasattr(df, x) for x in attrs), set(dir(df)) & set(attrs)
+    df.classes, df.missing_classes, df.y_pred, df.y_true = \
+        get_classes_and_y_vars(df)
+
+
 def report_essentials(df, bc23_classes):
     n_inferences = len(df.index)
-    classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
+    classes, missing_classes, y_pred, y_true = \
+        df.classes, df.missing_classes, df.y_pred, df.y_true
 
     if missing_classes:
         print(f'W: missing examples for {len(missing_classes)} classes.')
@@ -93,7 +102,8 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
 
 
 def report_sweeps(df, bc23_classes):
-    classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
+    classes, missing_classes, y_pred, y_true = \
+        df.classes, df.missing_classes, df.y_pred, df.y_true
 
     def ap_score(y_pred):
         return avg_precision_over_subset(
@@ -155,7 +165,8 @@ def show_dist(series, desc, show_hist):
 
 
 def report_class_stats(df, show_hist):
-    classes, missing_classes, y_pred, y_true = get_classes_and_y_vars(df)
+    classes, missing_classes, y_pred, y_true = \
+        df.classes, df.missing_classes, df.y_pred, df.y_true
     stats = [(name, np.mean(preds), max(preds))
              for name, preds in zip(classes, y_pred.T)]
     print()
@@ -189,6 +200,11 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
     df = df.drop('path', axis=1)
     df = df.set_index('short_name')
     assert sum(df.index.duplicated()) == 0, 'short_name column is not unique'
+
+    warnings.filterwarnings(
+        action='ignore', category=UserWarning,
+            message='Pandas doesn\'t allow columns to be created via a new')
+    add_df_attrs(df)
 
     report_essentials(df, bc23_classes)
 
