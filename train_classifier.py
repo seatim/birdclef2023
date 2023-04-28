@@ -21,13 +21,12 @@ from adak.check import check_images
 from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
 
-DEFAULT_COMBINED_IMAGES_DIR = 'data/train_images.combined'
 
-
-def create_combined_images_dir(cfg, path, dry_run=False):
+def create_combined_images_dir(cfg, dry_run=False):
     def dry_run_cmd(cmd):
         print(f'[DRY RUN] {cmd}')
 
+    path = cfg.combined_images_dir
     cmd = dry_run_cmd if dry_run else os.system
     cmd(f'mkdir -p {path}')
     print()
@@ -47,8 +46,9 @@ def create_combined_images_dir(cfg, path, dry_run=False):
     print()
 
 
-def get_data_loader(path, vocab, cfg, random_split, img_cls=PILImageBW):
+def get_data_loader(vocab, cfg, random_split, img_cls=PILImageBW):
 
+    path = cfg.combined_images_dir
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
@@ -74,7 +74,7 @@ def get_data_loader(path, vocab, cfg, random_split, img_cls=PILImageBW):
 @click.option('-D', '--bc22-images-dir', default=TrainConfig.bc22_images_dir,
               show_default=True)
 @click.option('-I', '--combined-images-dir',
-              default=DEFAULT_COMBINED_IMAGES_DIR, show_default=True)
+              default=TrainConfig.combined_images_dir, show_default=True)
 @click.option('-e', '--epochs', default=TrainConfig.n_epochs, show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
@@ -91,7 +91,8 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
 
     config = TrainConfig.from_dict(
         images_dir=images_dir, bc21_images_dir=bc21_images_dir,
-        bc22_images_dir=bc22_images_dir)
+        bc22_images_dir=bc22_images_dir,
+        combined_images_dir=combined_images_dir)
 
     tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
     classes = set(tmd.primary_label)
@@ -104,9 +105,8 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
         classes |= set(tmd22.primary_label)
 
-    create_combined_images_dir(config, combined_images_dir)
-    classes_present = check_images(
-        config, check_load_images, exit_on_error, combined_images_dir)
+    create_combined_images_dir(config)
+    classes_present = check_images(config, check_load_images, exit_on_error)
 
     missing = classes - classes_present
     if missing:
@@ -117,7 +117,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
             print(f'W: found no examples of {len(missing)} classes.  Consider '
                   f'using the --prune-missing-classes option to remove them.')
 
-    dls = get_data_loader(combined_images_dir, classes, config, random_split)
+    dls = get_data_loader(classes, config, random_split)
     dls.show_batch()
 
     metrics = [error_rate]

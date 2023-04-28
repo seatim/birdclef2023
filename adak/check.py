@@ -40,7 +40,8 @@ def check_image(cfg, image_path, check_load_image):
         return f'image height != {cfg.n_mels}: {image_path}'
 
 
-def check_images(cfg, check_load_images, exit_on_error, combined_images_dir):
+def check_images(cfg, check_load_images, exit_on_error):
+    combined_images_dir = cfg.combined_images_dir
     class_counts = defaultdict(int)
     classes_present = set(name for name in os.listdir(combined_images_dir)
                           if isdir(join(combined_images_dir, name)))
