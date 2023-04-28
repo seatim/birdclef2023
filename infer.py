@@ -1,6 +1,7 @@
 
 import os
 import sys
+import time
 
 from os.path import exists, join
 
@@ -112,8 +113,16 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     paths = [line.strip() for line in sys.stdin]
     known_classes = validate_paths(paths, classes)
+    last_time = time.time()
 
-    for path in paths:
+    for j, path in enumerate(paths):
+
+        now = time.time()
+        if now - last_time > 0.1:
+            print(f'Inferring {path} [{j}/{len(paths)}]...', end='\r',
+                  flush=True)
+            last_time = now
+
         correct_label = parent_label(path)
         if correct_label not in known_classes:
             if verbose:
@@ -130,7 +139,8 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
             sys.exit(f'E: image size != {expected_img_size}: {path}, '
                      f'{list(img.shape for img in images)}')
 
-        preds = np.stack([learn.predict(img)[2].numpy() for img in images])
+        with learn.no_bar():
+            preds = np.stack([learn.predict(img)[2].numpy() for img in images])
         assert preds.shape[1] == len(classes), preds[0]
 
         top5 = [classes[pred.argsort()[-5:]] for pred in preds]
