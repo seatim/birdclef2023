@@ -75,7 +75,7 @@ def get_data_loader(path, vocab, cfg, random_split, img_cls=PILImageBW):
               show_default=True)
 @click.option('-I', '--combined-images-dir',
               default=DEFAULT_COMBINED_IMAGES_DIR, show_default=True)
-@click.option('-e', '--epochs', default=5, show_default=True)
+@click.option('-e', '--epochs', default=TrainConfig.n_epochs, show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
 @click.option('-p', '--prune-missing-classes', is_flag=True)
@@ -119,7 +119,6 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
 
     dls = get_data_loader(combined_images_dir, classes, config, random_split)
     dls.show_batch()
-    arch = 'efficientnet_b0'
 
     metrics = [error_rate]
     if sys.version_info[:2] >= (3, 8):
@@ -132,7 +131,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
         # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
         metrics.append(ap_score)
 
-    learn = vision_learner(dls, arch, metrics=metrics)
+    learn = vision_learner(dls, config.arch, metrics=metrics)
     if not cpu:
         learn = learn.to_fp16()
 
@@ -142,8 +141,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
             action='ignore', category=UserWarning,
             message='No positive class found in y_true, recall')
 
-    # TODO: optimize learning rate
-    learn.fine_tune(epochs, 0.01)
+    learn.fine_tune(epochs, config.learn_rate)
 
     timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
     model_path = f'birdclef-model-{timestamp}.pkl'

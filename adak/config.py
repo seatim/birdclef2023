@@ -41,6 +41,9 @@ class TrainConfig(BaseConfig):
     bc21_images_dir = 'data/birdclef-2021/train_images'
     bc22_images_dir = 'data/birdclef-2022/train_images'
     random_seed = None
+    arch = 'efficientnet_b0'
+    n_epochs = 5
+    learn_rate = 0.01
 
 
 class InferenceConfig(BaseConfig):
