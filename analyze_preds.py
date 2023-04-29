@@ -167,12 +167,23 @@ def show_dist(series, desc, show_hist):
 def report_class_stats(df, show_hist):
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
+
     stats = [(name, np.mean(preds), max(preds))
              for name, preds in zip(classes, y_pred.T)]
+
+    stats_df = pd.DataFrame(dict(zip(('name', 'mean', 'max'), zip(*stats))))
+    stats_df['n_true'] = pd.Series(
+        [list(y_true).count(k) for k in range(len(classes))])
+    stats_df = stats_df[~stats_df.name.isin(missing_classes)]
+
     print()
-    print('Class statistics:')
+    print('Highest confidence classes:')
     print()
-    print(tabulate(stats, headers=('name', 'mean', 'max')))
+    print(stats_df.sort_values(['max', 'mean'], ascending=False).head(10))
+    print()
+    print('Lowest confidence classes:')
+    print()
+    print(stats_df.sort_values(['max', 'mean'], ascending=False).tail(10))
     print()
 
     show_dist(df.max(axis=0), 'max of predictions over examples', show_hist)
