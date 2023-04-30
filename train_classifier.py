@@ -57,6 +57,32 @@ def create_combined_images_dir(cfg, dry_run=False):
     print()
 
 
+def fine_tune_learner(classes, dls, random_split, config, epochs, cpu):
+    metrics = [error_rate]
+    if sys.version_info[:2] >= (3, 8):
+        ap_score = AccumMetric(partial(avg_precision, n_classes=len(classes)),
+                               activation=ActivationType.Sigmoid,
+                               flatten=False)
+
+        # average_precision_score() requires python 3.8+ and version 1.1+ of
+        # scikit-learn.  See [1] for more information.
+        # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
+        metrics.append(ap_score)
+
+    learn = vision_learner(dls, config.arch, metrics=metrics)
+    if not cpu:
+        learn = learn.to_fp16()
+
+    if random_split:
+        print('W: average precision score is invalid due to random split')
+        warnings.filterwarnings(
+            action='ignore', category=UserWarning,
+            message='No positive class found in y_true, recall')
+
+    learn.fine_tune(epochs, config.learn_rate)
+    return learn
+
+
 def get_data_loader(vocab, cfg, random_split, img_cls=PILImageBW):
 
     path = cfg.combined_images_dir
@@ -123,28 +149,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
     dls = get_data_loader(classes, config, random_split)
     dls.show_batch()
 
-    metrics = [error_rate]
-    if sys.version_info[:2] >= (3, 8):
-        ap_score = AccumMetric(partial(avg_precision, n_classes=len(classes)),
-                               activation=ActivationType.Sigmoid,
-                               flatten=False)
-
-        # average_precision_score() requires python 3.8+ and version 1.1+ of
-        # scikit-learn.  See [1] for more information.
-        # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
-        metrics.append(ap_score)
-
-    learn = vision_learner(dls, config.arch, metrics=metrics)
-    if not cpu:
-        learn = learn.to_fp16()
-
-    if random_split:
-        print('W: average precision score is invalid due to random split')
-        warnings.filterwarnings(
-            action='ignore', category=UserWarning,
-            message='No positive class found in y_true, recall')
-
-    learn.fine_tune(epochs, config.learn_rate)
+    learn = fine_tune_learner(classes, dls, random_split, config, epochs, cpu)
 
     timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
     model_path = f'birdclef-model-{timestamp}.pkl'
