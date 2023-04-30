@@ -22,6 +22,17 @@ from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
 
 
+def handle_missing_classes(classes, classes_present, prune_missing_classes):
+    missing = classes - classes_present
+    if missing:
+        if prune_missing_classes:
+            classes -= missing
+            print(f'I: removed {len(missing)} missing classes')
+        else:
+            print(f'W: found no examples of {len(missing)} classes.  Consider '
+                  f'using the --prune-missing-classes option to remove them.')
+
+
 def create_combined_images_dir(cfg, dry_run=False):
     def dry_run_cmd(cmd):
         print(f'[DRY RUN] {cmd}')
@@ -107,15 +118,7 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
 
     create_combined_images_dir(config)
     classes_present = check_images(config, check_load_images, exit_on_error)
-
-    missing = classes - classes_present
-    if missing:
-        if prune_missing_classes:
-            classes -= missing
-            print(f'I: removed {len(missing)} missing classes')
-        else:
-            print(f'W: found no examples of {len(missing)} classes.  Consider '
-                  f'using the --prune-missing-classes option to remove them.')
+    handle_missing_classes(classes, classes_present, prune_missing_classes)
 
     dls = get_data_loader(classes, config, random_split)
     dls.show_batch()
