@@ -20,6 +20,7 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
 from adak.check import check_images
 from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
+from adak.pretrain import make_pretrain_learner
 
 
 def handle_missing_classes(classes, classes_present, prune_missing_classes):
@@ -44,8 +45,10 @@ def create_combined_images_dir(cfg, dry_run=False):
     print('Removing all images from combined images directory...')
     cmd(f'find {path} -name \*.png -delete')
     print()
-    print('Copying images...')
-    cmd(f'cp -r {cfg.images_dir}/* {path}')
+
+    if cfg.bc23_images_dir:
+        print('Copying images...')
+        cmd(f'cp -r {cfg.bc23_images_dir}/* {path}')
 
     if cfg.bc21_images_dir:
         print('Copying images...')
@@ -57,7 +60,8 @@ def create_combined_images_dir(cfg, dry_run=False):
     print()
 
 
-def fine_tune_learner(classes, dls, random_split, config, epochs, cpu):
+def fine_tune_learner(classes, dls, random_split, config, epochs, cpu,
+                      pre_learn=None):
     metrics = [error_rate]
     if sys.version_info[:2] >= (3, 8):
         ap_score = AccumMetric(partial(avg_precision, n_classes=len(classes)),
@@ -69,7 +73,11 @@ def fine_tune_learner(classes, dls, random_split, config, epochs, cpu):
         # [1] https://github.com/scikit-learn/scikit-learn/pull/19085
         metrics.append(ap_score)
 
-    learn = vision_learner(dls, config.arch, metrics=metrics)
+    if pre_learn:
+        learn = make_pretrain_learner(pre_learn, dls, metrics)
+    else:
+        learn = vision_learner(dls, config.arch, metrics=metrics)
+
     if not cpu:
         learn = learn.to_fp16()
 
@@ -101,38 +109,16 @@ def get_data_loader(vocab, cfg, random_split, img_cls=PILImageBW):
     return ImageDataLoaders.from_dblock(dblock, path, path=path)
 
 
-@click.command()
-@click.option('-c', '--check-load-images', is_flag=True)
-@click.option('-b', '--exit-on-error', is_flag=True)
-@click.option('-i', '--images-dir', default=TrainConfig.images_dir,
-              show_default=True)
-@click.option('-B', '--bc21-images-dir', default=TrainConfig.bc21_images_dir,
-              show_default=True)
-@click.option('-D', '--bc22-images-dir', default=TrainConfig.bc22_images_dir,
-              show_default=True)
-@click.option('-I', '--combined-images-dir',
-              default=TrainConfig.combined_images_dir, show_default=True)
-@click.option('-e', '--epochs', default=TrainConfig.n_epochs, show_default=True)
-@click.option('-C', '--cpu', is_flag=True)
-@click.option('-r', '--random-split', is_flag=True)
-@click.option('-p', '--prune-missing-classes', is_flag=True)
-def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
-         bc22_images_dir, combined_images_dir, epochs, cpu, random_split,
-         prune_missing_classes):
-
-    if not isdir(images_dir):
-        sys.exit(f'E: no such directory: {images_dir}\n\nYou can create an '
-                 f'images directory with make_images_from_audio.py.')
-    if abspath(images_dir) == abspath(combined_images_dir):
-        sys.exit('E: images_dir and combined_images_dir must be different')
+def pretrain_classifier(combined_images_dir, bc21_images_dir, bc22_images_dir,
+                        epochs, cpu, check_load_images, exit_on_error,
+                        prune_missing_classes):
 
     config = TrainConfig.from_dict(
-        images_dir=images_dir, bc21_images_dir=bc21_images_dir,
-        bc22_images_dir=bc22_images_dir,
+        bc23_images_dir=None,
+        bc21_images_dir=bc21_images_dir, bc22_images_dir=bc22_images_dir,
         combined_images_dir=combined_images_dir)
 
-    tmd = pd.read_csv(join(images_dir, '..', 'train_metadata.csv'))
-    classes = set(tmd.primary_label)
+    classes = set()
 
     if bc21_images_dir:
         tmd21 = pd.read_csv(join(bc21_images_dir, '..', 'train_metadata.csv'))
@@ -146,10 +132,66 @@ def main(check_load_images, exit_on_error, images_dir, bc21_images_dir,
     classes_present = check_images(config, check_load_images, exit_on_error)
     handle_missing_classes(classes, classes_present, prune_missing_classes)
 
+    dls = get_data_loader(classes, config, False)
+    dls.show_batch()
+
+    return fine_tune_learner(classes, dls, False, config, epochs, cpu)
+
+
+@click.command()
+@click.option('-c', '--check-load-images', is_flag=True)
+@click.option('-b', '--exit-on-error', is_flag=True)
+@click.option('-i', '--bc23-images-dir', default=TrainConfig.bc23_images_dir,
+              show_default=True)
+@click.option('-B', '--bc21-images-dir', default=TrainConfig.bc21_images_dir,
+              show_default=True)
+@click.option('-D', '--bc22-images-dir', default=TrainConfig.bc22_images_dir,
+              show_default=True)
+@click.option('-I', '--combined-images-dir',
+              default=TrainConfig.combined_images_dir, show_default=True)
+@click.option('-e', '--epochs', default=TrainConfig.n_epochs, show_default=True)
+@click.option('-C', '--cpu', is_flag=True)
+@click.option('-r', '--random-split', is_flag=True)
+@click.option('-p', '--prune-missing-classes', is_flag=True)
+def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
+         bc22_images_dir, combined_images_dir, epochs, cpu, random_split,
+         prune_missing_classes):
+
+    if not isdir(bc23_images_dir):
+        sys.exit(f'E: no such directory: {bc23_images_dir}\n\nYou can create '
+                 f'an images directory with make_images_from_audio.py.')
+
+    for dir_, name in ((bc23_images_dir, 'bc23_images_dir'),
+                       (bc21_images_dir, 'bc21_images_dir'),
+                       (bc22_images_dir, 'bc22_images_dir')):
+        if dir_ and abspath(dir_) == abspath(combined_images_dir):
+            sys.exit(f'E: {name} and combined_images_dir must be different')
+
+    if bc21_images_dir or bc22_images_dir:
+        print('Pretraining model on bc21 and/or bc22 data sets')
+        pre_learn = pretrain_classifier(
+            combined_images_dir, bc21_images_dir, bc22_images_dir, epochs, cpu,
+            check_load_images, exit_on_error, prune_missing_classes)
+    else:
+        pre_learn = None
+
+    config = TrainConfig.from_dict(
+        bc23_images_dir=bc23_images_dir,
+        bc21_images_dir=None, bc22_images_dir=None,
+        combined_images_dir=combined_images_dir)
+
+    tmd = pd.read_csv(join(bc23_images_dir, '..', 'train_metadata.csv'))
+    classes = set(tmd.primary_label)
+
+    create_combined_images_dir(config)
+    classes_present = check_images(config, check_load_images, exit_on_error)
+    handle_missing_classes(classes, classes_present, prune_missing_classes)
+
     dls = get_data_loader(classes, config, random_split)
     dls.show_batch()
 
-    learn = fine_tune_learner(classes, dls, random_split, config, epochs, cpu)
+    learn = fine_tune_learner(
+        classes, dls, random_split, config, epochs, cpu, pre_learn)
 
     timestamp = datetime.now().strftime('%Y%m%d.%H%M%S')
     model_path = f'birdclef-model-{timestamp}.pkl'

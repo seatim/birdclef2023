@@ -2,7 +2,6 @@
 
 class BaseConfig:
     audio_dir = 'data/birdclef-2023/train_audio'
-    images_dir = 'data/birdclef-2023/train_images'
     n_mels = 224
     n_fft = 1024
     hop_length = n_fft // 2
@@ -31,6 +30,7 @@ class BaseConfig:
 
 
 class MakeImagesConfig(BaseConfig):
+    images_dir = 'data/birdclef-2023/train_images'
     min_examples_per_class = 10
     max_examples_per_class = 10000
     max_paths_per_class = None
@@ -41,6 +41,7 @@ class MakeImagesConfig(BaseConfig):
 class TrainConfig(BaseConfig):
     bc21_images_dir = 'data/birdclef-2021/train_images'
     bc22_images_dir = 'data/birdclef-2022/train_images'
+    bc23_images_dir = 'data/birdclef-2023/train_images'
     combined_images_dir = 'data/train_images.combined'
     random_seed = None
     arch = 'efficientnet_b0'
