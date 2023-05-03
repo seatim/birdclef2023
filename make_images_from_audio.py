@@ -150,7 +150,17 @@ def make_images_for_class(label, paths, images_dir, config, verbose=False):
 
 def make_images(split_name, audio_files, images_dir, cfg, verbose=False):
     paths_by_class = defaultdict(list)
+
     for path in audio_files:
+        label = parent_label(path)
+
+        if cfg.max_classes is not None:
+            if label not in cfg.include_classes:
+                if len(cfg.include_classes) < cfg.max_classes:
+                    cfg.include_classes.add(label)
+                else:
+                    continue
+
         paths_by_class[parent_label(path)].append(path)
 
     os.makedirs(images_dir, exist_ok=True)
@@ -180,10 +190,11 @@ def make_images(split_name, audio_files, images_dir, cfg, verbose=False):
               show_default=True)
 @click.option('-m', '--max-images-per-file', type=int)
 @click.option('-M', '--max-paths-per-class', type=int)
+@click.option('-Z', '--max-classes', type=int)
 @click.option('-f', '--force-overwrite', is_flag=True)
 @click.option('-v', '--verbose', is_flag=True)
 def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
-         force_overwrite, verbose):
+         max_classes, force_overwrite, verbose):
 
     if exists(images_dir) and not force_overwrite:
         sys.exit(f'E: {images_dir} exists.  Use "-f" to overwrite it.')
@@ -194,7 +205,8 @@ def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
     config = MakeImagesConfig.from_dict(
         audio_dir=audio_dir, images_dir=images_dir,
         max_images_per_file=max_images_per_file,
-        max_paths_per_class=max_paths_per_class)
+        max_paths_per_class=max_paths_per_class,
+        max_classes=max_classes, include_classes=set())
 
     assert 0 < config.min_examples_per_class <= config.max_examples_per_class
 
