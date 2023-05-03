@@ -8,6 +8,7 @@ from functools import partial
 from os.path import abspath, isdir, join
 
 import click
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -88,10 +89,12 @@ def fine_tune_learner(classes, dls, random_split, config, epochs, cpu,
             message='No positive class found in y_true, recall')
 
     learn.fine_tune(epochs, config.learn_rate)
+
     return learn
 
 
-def get_data_loader(vocab, cfg, random_split, img_cls=PILImageBW):
+def get_data_loader(vocab, cfg, random_split, show_batch=False,
+                    img_cls=PILImageBW):
 
     path = cfg.combined_images_dir
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
@@ -106,12 +109,16 @@ def get_data_loader(vocab, cfg, random_split, img_cls=PILImageBW):
                        item_tfms=item_tfms,
                        batch_tfms=batch_tfms)
 
-    return ImageDataLoaders.from_dblock(dblock, path, path=path)
+    dls = ImageDataLoaders.from_dblock(dblock, path, path=path)
+    if show_batch:
+        dls.show_batch()
+        plt.show()
+    return dls
 
 
 def pretrain_classifier(combined_images_dir, bc21_images_dir, bc22_images_dir,
                         epochs, cpu, check_load_images, exit_on_error,
-                        prune_missing_classes):
+                        prune_missing_classes, show_batch):
 
     config = TrainConfig.from_dict(
         bc23_images_dir=None,
@@ -132,8 +139,7 @@ def pretrain_classifier(combined_images_dir, bc21_images_dir, bc22_images_dir,
     classes_present = check_images(config, check_load_images, exit_on_error)
     handle_missing_classes(classes, classes_present, prune_missing_classes)
 
-    dls = get_data_loader(classes, config, False)
-    dls.show_batch()
+    dls = get_data_loader(classes, config, False, show_batch)
 
     return fine_tune_learner(classes, dls, False, config, epochs, cpu)
 
@@ -153,9 +159,10 @@ def pretrain_classifier(combined_images_dir, bc21_images_dir, bc22_images_dir,
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
 @click.option('-p', '--prune-missing-classes', is_flag=True)
+@click.option('-w', '--show-batch', is_flag=True)
 def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
          bc22_images_dir, combined_images_dir, epochs, cpu, random_split,
-         prune_missing_classes):
+         prune_missing_classes, show_batch):
 
     if not isdir(bc23_images_dir):
         sys.exit(f'E: no such directory: {bc23_images_dir}\n\nYou can create '
@@ -171,7 +178,8 @@ def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
         print('Pretraining model on bc21 and/or bc22 data sets')
         pre_learn = pretrain_classifier(
             combined_images_dir, bc21_images_dir, bc22_images_dir, epochs, cpu,
-            check_load_images, exit_on_error, prune_missing_classes)
+            check_load_images, exit_on_error, prune_missing_classes,
+            show_batch)
     else:
         pre_learn = None
 
@@ -187,8 +195,7 @@ def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
     classes_present = check_images(config, check_load_images, exit_on_error)
     handle_missing_classes(classes, classes_present, prune_missing_classes)
 
-    dls = get_data_loader(classes, config, random_split)
-    dls.show_batch()
+    dls = get_data_loader(classes, config, random_split, show_batch)
 
     learn = fine_tune_learner(
         classes, dls, random_split, config, epochs, cpu, pre_learn)
