@@ -16,7 +16,8 @@ from fastai.metrics import AccumMetric, ActivationType
 from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
                                CategoryBlock, PILImageBW, get_image_files,
-                               parent_label, Resize, Brightness, Contrast)
+                               parent_label, Resize, Brightness, Contrast,
+                               load_learner)
 
 from adak.check import check_images
 from adak.config import TrainConfig
@@ -116,34 +117,6 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     return dls
 
 
-def pretrain_classifier(combined_images_dir, bc21_images_dir, bc22_images_dir,
-                        epochs, cpu, check_load_images, exit_on_error,
-                        prune_missing_classes, show_batch):
-
-    config = TrainConfig.from_dict(
-        bc23_images_dir=None,
-        bc21_images_dir=bc21_images_dir, bc22_images_dir=bc22_images_dir,
-        combined_images_dir=combined_images_dir)
-
-    classes = set()
-
-    if bc21_images_dir:
-        tmd21 = pd.read_csv(join(bc21_images_dir, '..', 'train_metadata.csv'))
-        classes |= set(tmd21.primary_label)
-
-    if bc22_images_dir:
-        tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
-        classes |= set(tmd22.primary_label)
-
-    create_combined_images_dir(config)
-    classes_present = check_images(config, check_load_images, exit_on_error)
-    handle_missing_classes(classes, classes_present, prune_missing_classes)
-
-    dls = get_data_loader(classes, config, False, show_batch)
-
-    return fine_tune_learner(classes, dls, False, config, epochs, cpu)
-
-
 @click.command()
 @click.option('-c', '--check-load-images', is_flag=True)
 @click.option('-b', '--exit-on-error', is_flag=True)
@@ -160,9 +133,10 @@ def pretrain_classifier(combined_images_dir, bc21_images_dir, bc22_images_dir,
 @click.option('-r', '--random-split', is_flag=True)
 @click.option('-p', '--prune-missing-classes', is_flag=True)
 @click.option('-w', '--show-batch', is_flag=True)
+@click.option('-P', '--pretrained-model')
 def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
          bc22_images_dir, combined_images_dir, epochs, cpu, random_split,
-         prune_missing_classes, show_batch):
+         prune_missing_classes, show_batch, pretrained_model):
 
     if not isdir(bc23_images_dir):
         sys.exit(f'E: no such directory: {bc23_images_dir}\n\nYou can create '
@@ -174,24 +148,27 @@ def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
         if dir_ and abspath(dir_) == abspath(combined_images_dir):
             sys.exit(f'E: {name} and combined_images_dir must be different')
 
-    if bc21_images_dir or bc22_images_dir:
-        print('Pretraining model on bc21 and/or bc22 data sets')
-        pre_learn = pretrain_classifier(
-            combined_images_dir, bc21_images_dir, bc22_images_dir, epochs, cpu,
-            check_load_images, exit_on_error, prune_missing_classes,
-            show_batch)
-    else:
-        pre_learn = None
+    pre_learn = load_learner(pretrained_model) if pretrained_model else None
+    classes = set()
+
+    if bc23_images_dir:
+        tmd = pd.read_csv(join(bc23_images_dir, '..', 'train_metadata.csv'))
+        classes |= set(tmd.primary_label)
+
+    if bc21_images_dir:
+        tmd21 = pd.read_csv(join(bc21_images_dir, '..', 'train_metadata.csv'))
+        classes |= set(tmd21.primary_label)
+
+    if bc22_images_dir:
+        tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
+        classes |= set(tmd22.primary_label)
 
     config = TrainConfig.from_dict(
         bc23_images_dir=bc23_images_dir,
-        bc21_images_dir=None, bc22_images_dir=None,
+        bc21_images_dir=bc21_images_dir, bc22_images_dir=bc22_images_dir,
         combined_images_dir=combined_images_dir)
 
-    tmd = pd.read_csv(join(bc23_images_dir, '..', 'train_metadata.csv'))
-    classes = set(tmd.primary_label)
-
-    create_combined_images_dir(config)
+    create_combined_images_dir(config, False)
     classes_present = check_images(config, check_load_images, exit_on_error)
     handle_missing_classes(classes, classes_present, prune_missing_classes)
 
