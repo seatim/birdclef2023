@@ -13,6 +13,7 @@ from fastai.vision.all import load_learner, parent_label, Resize
 from PIL import Image
 from tabulate import tabulate
 
+from adak.augment import HTrans, htrans_mat  # needed by some learners
 from adak.config import InferenceConfig
 from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
 from adak.filter import do_filter_top_k, fine_threshold
