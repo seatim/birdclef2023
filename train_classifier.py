@@ -19,6 +19,7 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                parent_label, Resize, Brightness, Contrast,
                                load_learner, setup_aug_tfms)
 
+from adak.augment import HTrans
 from adak.check import check_images
 from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
@@ -101,7 +102,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
-    batch_tfms = [Brightness(0.8), Contrast(0.8)]
+    batch_tfms = [Brightness(0.8), Contrast(0.8), HTrans(1)]
 
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
