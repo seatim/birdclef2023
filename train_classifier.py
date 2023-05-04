@@ -17,7 +17,7 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
                                CategoryBlock, PILImageBW, get_image_files,
                                parent_label, Resize, Brightness, Contrast,
-                               load_learner)
+                               load_learner, setup_aug_tfms)
 
 from adak.check import check_images
 from adak.config import TrainConfig
@@ -108,7 +108,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
                        splitter=splitter,
                        get_y=parent_label,
                        item_tfms=item_tfms,
-                       batch_tfms=batch_tfms)
+                       batch_tfms=setup_aug_tfms(batch_tfms))
 
     dls = ImageDataLoaders.from_dblock(dblock, path, path=path)
     if show_batch:
