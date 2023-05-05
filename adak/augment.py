@@ -15,7 +15,7 @@ def htrans_mat(x, p, max_trans):
         raise ValueError('max_trans must be >= 0')
 
     def _def_draw(x):
-        return x.new_empty(x.size(0)).uniform_(0, max_trans)
+        return x.new_empty(x.size(0)).uniform_(-max_trans, max_trans)
 
     mask = _draw_mask(x, _def_draw, draw=None, p=p, batch=False)
     return affine_mat(t1(mask), t0(mask), mask,

@@ -48,7 +48,7 @@ class TrainConfig(BaseConfig):
     n_epochs = 5
     learn_rate = 0.01
     max_lighting = 0.8
-    max_htrans = 1
+    max_htrans = 0.2
 
 
 class InferenceConfig(BaseConfig):
