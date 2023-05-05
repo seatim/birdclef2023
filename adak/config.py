@@ -47,6 +47,8 @@ class TrainConfig(BaseConfig):
     arch = 'efficientnet_b0'
     n_epochs = 5
     learn_rate = 0.01
+    max_lighting = 0.8
+    max_htrans = 1
 
 
 class InferenceConfig(BaseConfig):

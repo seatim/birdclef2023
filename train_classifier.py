@@ -102,7 +102,8 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
-    batch_tfms = [Brightness(0.8), Contrast(0.8), HTrans(1)]
+    batch_tfms = [Brightness(cfg.max_lighting), Contrast(cfg.max_lighting),
+                  HTrans(cfg.max_htrans)]
 
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
