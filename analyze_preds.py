@@ -232,17 +232,17 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
     if show_stats:
         qualifier = 'all ' if set(all_classes) != set(bc23_classes) else ''
 
-        show_dist(df.sum(axis=1),
-                  f'sum of predictions over {qualifier}classes', show_hist)
-        if do_bc23:
-            show_dist(df[bc23_classes].sum(axis=1),
-                      'sum of predictions over bc23 classes', show_hist)
+        def show_stat_over_classes(stat, qualifier):
+            desc = stat.__name__ + ' of predictions over {}classes'
+            show_dist(stat(axis=1), desc.format(qualifier), show_hist)
 
-        show_dist(df.max(axis=1),
-                  f'max of predictions over {qualifier}classes', show_hist)
+        show_stat_over_classes(df.sum, qualifier)
         if do_bc23:
-            show_dist(df[bc23_classes].max(axis=1),
-                      'max of predictions over bc23 classes', show_hist)
+            show_stat_over_classes(df[bc23_classes].sum, 'bc23 ')
+
+        show_stat_over_classes(df.max, qualifier)
+        if do_bc23:
+            show_stat_over_classes(df[bc23_classes].max, 'bc23 ')
 
     if do_class_stats:
         report_class_stats(df, show_hist)
