@@ -45,7 +45,7 @@ def add_df_attrs(df):
         get_classes_and_y_vars(df)
 
 
-def report_essentials(df, bc23_classes, skip_bc23_classes):
+def report_essentials(df, bc23_classes, do_bc23):
     n_inferences = len(df.index)
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
@@ -73,7 +73,7 @@ def report_essentials(df, bc23_classes, skip_bc23_classes):
     print(f'average precision score: {ap_score:.3f}')
     print()
 
-    if (set(classes) != set(bc23_classes)) and not skip_bc23_classes:
+    if do_bc23:
         y_pred_b, y_true_b = slice_by_class_subset(
             y_pred, y_true, classes, bc23_classes)
 
@@ -101,7 +101,7 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
     print()
 
 
-def report_sweeps(df, bc23_classes, skip_bc23_classes):
+def report_sweeps(df, bc23_classes, do_bc23):
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
 
@@ -123,7 +123,7 @@ def report_sweeps(df, bc23_classes, skip_bc23_classes):
     sweep_preds_AP_score(
         y_pred, ap_score, ps, 'p', max_filter, 'max filter')
 
-    if (set(classes) != set(bc23_classes)) and not skip_bc23_classes:
+    if do_bc23:
         y_pred_b, y_true_b = slice_by_class_subset(
             y_pred, y_true, classes, bc23_classes)
 
@@ -216,29 +216,31 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
     df = df.set_index('short_name')
     assert sum(df.index.duplicated()) == 0, 'short_name column is not unique'
 
+    all_classes = np.array(df.columns)
+    do_bc23 = (set(all_classes) != set(bc23_classes)) and not skip_bc23_classes
+
     warnings.filterwarnings(
         action='ignore', category=UserWarning,
             message='Pandas doesn\'t allow columns to be created via a new')
     add_df_attrs(df)
 
-    report_essentials(df, bc23_classes, skip_bc23_classes)
+    report_essentials(df, bc23_classes, do_bc23)
 
     if do_sweeps:
-        report_sweeps(df, bc23_classes, skip_bc23_classes)
+        report_sweeps(df, bc23_classes, do_bc23)
 
     if show_stats:
-        all_classes = np.array(df.columns)
         qualifier = 'all ' if set(all_classes) != set(bc23_classes) else ''
 
         show_dist(df.sum(axis=1),
                   f'sum of predictions over {qualifier}classes', show_hist)
-        if (set(all_classes) != set(bc23_classes)) and not skip_bc23_classes:
+        if do_bc23:
             show_dist(df[bc23_classes].sum(axis=1),
                       'sum of predictions over bc23 classes', show_hist)
 
         show_dist(df.max(axis=1),
                   f'max of predictions over {qualifier}classes', show_hist)
-        if (set(all_classes) != set(bc23_classes)) and not skip_bc23_classes:
+        if do_bc23:
             show_dist(df[bc23_classes].max(axis=1),
                       'max of predictions over bc23 classes', show_hist)
 
@@ -246,7 +248,6 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
         report_class_stats(df, show_hist)
 
     if threshold and not skip_bc23_classes:
-        all_classes = np.array(df.columns)
         df['sum_bc23'] = df[bc23_classes].sum(axis=1)
         lp = df[df['sum_bc23'] < threshold]
         table = [[path, row['sum_bc23']] for path, row in lp.iterrows()]
