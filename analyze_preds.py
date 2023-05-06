@@ -45,7 +45,7 @@ def add_df_attrs(df):
         get_classes_and_y_vars(df)
 
 
-def report_essentials(df, bc23_classes):
+def report_essentials(df, bc23_classes, skip_bc23_classes):
     n_inferences = len(df.index)
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
@@ -73,7 +73,7 @@ def report_essentials(df, bc23_classes):
     print(f'average precision score: {ap_score:.3f}')
     print()
 
-    if set(classes) != set(bc23_classes):
+    if (set(classes) != set(bc23_classes)) and not skip_bc23_classes:
         y_pred_b, y_true_b = slice_by_class_subset(
             y_pred, y_true, classes, bc23_classes)
 
@@ -101,7 +101,7 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
     print()
 
 
-def report_sweeps(df, bc23_classes):
+def report_sweeps(df, bc23_classes, skip_bc23_classes):
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
 
@@ -123,7 +123,7 @@ def report_sweeps(df, bc23_classes):
     sweep_preds_AP_score(
         y_pred, ap_score, ps, 'p', max_filter, 'max filter')
 
-    if set(classes) != set(bc23_classes):
+    if (set(classes) != set(bc23_classes)) and not skip_bc23_classes:
         y_pred_b, y_true_b = slice_by_class_subset(
             y_pred, y_true, classes, bc23_classes)
 
@@ -197,15 +197,19 @@ def report_class_stats(df, show_hist):
 @click.option('-R', '--report-class-stats', 'do_class_stats', is_flag=True)
 @click.option('-p', '--threshold', type=float)
 @click.option('-e', '--list-nse-candidates', is_flag=True)
+@click.option('-k', '--skip-bc23-classes', is_flag=True)
 def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
-         list_nse_candidates):
+         list_nse_candidates, skip_bc23_classes):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
 
     df = pd.read_csv(path, index_col=0)
     bc23_classes = list(get_bc23_classes(path))
-    assert set(bc23_classes) - set(df.columns) == set(), 'missing bc23 classes'
+    if set(bc23_classes) - set(df.columns):
+        if not skip_bc23_classes:
+           sys.exit('E: missing bc23 classes.  To proceed with analysis '
+                    'anyway use the --skip-bc23-classes option.')
 
     df['short_name'] = df.apply(short_name, axis=1)
     df = df.drop('path', axis=1)
@@ -217,10 +221,10 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
             message='Pandas doesn\'t allow columns to be created via a new')
     add_df_attrs(df)
 
-    report_essentials(df, bc23_classes)
+    report_essentials(df, bc23_classes, skip_bc23_classes)
 
     if do_sweeps:
-        report_sweeps(df, bc23_classes)
+        report_sweeps(df, bc23_classes, skip_bc23_classes)
 
     if show_stats:
         all_classes = np.array(df.columns)
@@ -228,20 +232,20 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
 
         show_dist(df.sum(axis=1),
                   f'sum of predictions over {qualifier}classes', show_hist)
-        if set(all_classes) != set(bc23_classes):
+        if (set(all_classes) != set(bc23_classes)) and not skip_bc23_classes:
             show_dist(df[bc23_classes].sum(axis=1),
                       'sum of predictions over bc23 classes', show_hist)
 
         show_dist(df.max(axis=1),
                   f'max of predictions over {qualifier}classes', show_hist)
-        if set(all_classes) != set(bc23_classes):
+        if (set(all_classes) != set(bc23_classes)) and not skip_bc23_classes:
             show_dist(df[bc23_classes].max(axis=1),
                       'max of predictions over bc23 classes', show_hist)
 
     if do_class_stats:
         report_class_stats(df, show_hist)
 
-    if threshold:
+    if threshold and not skip_bc23_classes:
         all_classes = np.array(df.columns)
         df['sum_bc23'] = df[bc23_classes].sum(axis=1)
         lp = df[df['sum_bc23'] < threshold]
@@ -261,7 +265,7 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
             print(tabulate([top5 + [f'{p:.4f}' for p in top5preds]]))
             print()
 
-    if list_nse_candidates:
+    if list_nse_candidates and not skip_bc23_classes:
         df['sum_bc23'] = df[bc23_classes].sum(axis=1)
         df['max_bc23'] = df[bc23_classes].max(axis=1)
 
