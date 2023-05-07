@@ -248,13 +248,13 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
         report_class_stats(df, show_hist)
 
     if threshold and not skip_bc23_classes:
-        df['sum_bc23'] = df[bc23_classes].sum(axis=1)
-        lp = df[df['sum_bc23'] < threshold]
-        table = [[path, row['sum_bc23']] for path, row in lp.iterrows()]
+        df['max_bc23'] = df[bc23_classes].max(axis=1)
+        lp = df[df['max_bc23'] < threshold]
+        table = [[path, row['max_bc23']] for path, row in lp.iterrows()]
 
         print()
-        print('Examples with sum of bc23 class predictions below threshold:')
-        print(tabulate(table, headers=['path', 'sum_bc23']))
+        print('Examples with max of bc23 class predictions below threshold:')
+        print(tabulate(table, headers=['path', 'max_bc23']))
 
         print()
         print('Top five predictions for the first of these examples:')
