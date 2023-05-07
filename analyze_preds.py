@@ -3,6 +3,7 @@ import os
 import sys
 import warnings
 
+from operator import itemgetter
 from os.path import dirname, join
 
 import click
@@ -251,10 +252,18 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
         df['max_bc23'] = df[bc23_classes].max(axis=1)
         lp = df[df['max_bc23'] < threshold]
         table = [[path, row['max_bc23']] for path, row in lp.iterrows()]
+        table = sorted(table, key=itemgetter(1), reverse=True)
 
         print()
         print('Examples with max of bc23 class predictions below threshold:')
-        print(tabulate(table, headers=['path', 'max_bc23']))
+        print()
+        print('Top five:')
+        print(tabulate(table[:5], headers=['path', 'max_bc23']))
+        print()
+        if len(table) > 5:
+            print('Bottom five:')
+            print(tabulate(table[-5:], headers=['path', 'max_bc23']))
+            print()
 
         print()
         print('Top five predictions for the first of these examples:')
