@@ -1,6 +1,7 @@
 
 import os
 import sys
+import time
 import warnings
 
 from operator import itemgetter
@@ -17,10 +18,15 @@ from tabulate import tabulate
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
                            slice_by_class_subset)
 from adak.filter import do_filter_top_k, fine_threshold, sum_filter, max_filter
+from adak.hashfile import file_sha1
+
+
+def short_path(path):
+    return os.sep.join(path.split(os.sep)[-2:])
 
 
 def short_name(row):
-    return os.sep.join(row.path.split(os.sep)[-2:])
+    return short_path(row.path)
 
 
 def get_bc23_classes(path):
@@ -190,6 +196,27 @@ def report_class_stats(df, show_hist):
     show_dist(df.max(axis=0), 'max of predictions over examples', show_hist)
 
 
+def hash_files(df):
+    print()
+    print('I: hashing files, this may take a while...')
+
+    sha1s = []
+    last_time = time.time()
+    n_files = len(df.index)
+
+    for k, path in enumerate(df['path']):
+        now = time.time()
+        if now - last_time > 0.1:
+            last_time = now
+            msg = f'I: hashing {short_path(path)} [{k}/{n_files}] ...   '
+            print(msg, end='\r', flush=True)
+
+        sha1s.append(file_sha1(path))
+
+    df['sha1'] = sha1s
+    print()
+
+
 @click.command()
 @click.argument('path')
 @click.option('-s', '--show-hist', is_flag=True)
@@ -199,8 +226,9 @@ def report_class_stats(df, show_hist):
 @click.option('-p', '--threshold', type=float)
 @click.option('-e', '--list-nse-candidates', is_flag=True)
 @click.option('-k', '--skip-bc23-classes', is_flag=True)
+@click.option('-m', '--make-nse-file', is_flag=True)
 def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
-         list_nse_candidates, skip_bc23_classes):
+         list_nse_candidates, skip_bc23_classes, make_nse_file):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
@@ -213,9 +241,11 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
                     'anyway use the --skip-bc23-classes option.')
 
     df['short_name'] = df.apply(short_name, axis=1)
-    df = df.drop('path', axis=1)
     df = df.set_index('short_name')
     assert sum(df.index.duplicated()) == 0, 'short_name column is not unique'
+
+    path_column = df['path']
+    df = df.drop('path', axis=1)
 
     all_classes = np.array(df.columns)
     do_bc23 = (set(all_classes) != set(bc23_classes)) and not skip_bc23_classes
@@ -287,6 +317,16 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
         print('Examples with lowest max of bc23 predictions:')
         print(df['max_bc23'].sort_values().head(5))
         print()
+
+    if make_nse_file and not skip_bc23_classes:
+        df['max_bc23'] = df[bc23_classes].max(axis=1)
+        df_nse = df[['max_bc23']].copy()
+        df_nse['path'] = path_column
+
+        hash_files(df_nse)
+        output_path = path + '.nsedata.csv'
+        df_nse.to_csv(output_path, index=False)
+        print(f'I: wrote the NSE data to {output_path}')
 
 
 if __name__ == '__main__':
