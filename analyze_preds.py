@@ -1,5 +1,6 @@
 
 import os
+import re
 import sys
 import time
 import warnings
@@ -200,6 +201,16 @@ def hash_files(df):
     print()
     print('I: hashing files, this may take a while...')
 
+    _a = os.environ.get('REWRITE_PATH_FROM')
+    _b = os.environ.get('REWRITE_PATH_TO')
+
+    if _a is not None and _b is not None:
+        def rewrite_path(path):
+            return re.sub(_a, _b, path)
+    else:
+        def rewrite_path(path):
+            return path
+
     sha1s = []
     last_time = time.time()
     n_files = len(df.index)
@@ -211,7 +222,7 @@ def hash_files(df):
             msg = f'I: hashing {short_path(path)} [{k}/{n_files}] ...   '
             print(msg, end='\r', flush=True)
 
-        sha1s.append(file_sha1(path))
+        sha1s.append(file_sha1(rewrite_path(path)))
 
     df['sha1'] = sha1s
     print()
