@@ -156,9 +156,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
                   flush=True)
             last_time = now
 
-        correct_label = parent_label(path)
-        assert correct_label in known_classes, correct_label
-        correct_label_index = list(learn.dls.vocab).index(correct_label)
+        y = parent_label(path)
+        assert y in known_classes, y
+        y_index = list(learn.dls.vocab).index(y)
 
         if path.endswith('.ogg'):
             images = get_images_from_audio(path, quick, quicker, config, resize)
@@ -183,11 +183,11 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
             print()
 
         n_inferences += len(images)
-        n_top1 += sum(label == correct_label for label in top1)
-        n_top5 += sum(correct_label in labels for labels in top5)
+        n_top1 += sum(label == y for label in top1)
+        n_top5 += sum(y in labels for labels in top5)
 
         y_pred.append(preds)
-        y_true.append([correct_label_index] * len(images))
+        y_true.append([y_index] * len(images))
 
     if not n_inferences:
         sys.exit('No inferences were made.')
