@@ -1,15 +1,17 @@
 
 import os
+import re
 import sys
 import time
 
-from os.path import exists, join
+from os.path import basename, exists, join
 
 import click
 import numpy as np
 import pandas as pd
 
-from fastai.vision.all import load_learner, parent_label, Resize
+from fastai.vision.all import (load_learner, parent_label, Resize,
+                               get_image_files)
 from PIL import Image
 from tabulate import tabulate
 
@@ -18,6 +20,20 @@ from adak.config import InferenceConfig
 from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
 from adak.filter import do_filter_top_k, fine_threshold
 from adak.transform import images_from_audio, image_width
+
+DEFAULT_PREDS_DIR = 'data/preds'
+
+
+def get_model_version(path):
+    match = re.match('birdclef-model-(\d+.\d+).pkl$', basename(path))
+    if match:
+        return match.groups()[0]
+
+
+def get_val_dir_version(path):
+    path = basename(path.rstrip('/'))
+    if path.startswith('val_images.'):
+        return path[11:]
 
 
 def validate_paths(paths, model_classes):
@@ -93,9 +109,24 @@ def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
 @click.option('-K', '--no-top-k-filter-sweep', is_flag=True)
 @click.option('-P', '--no-threshold-sweep', is_flag=True)
 @click.option('-s', '--save-preds', help='path to file to save preds to')
+@click.option('-S', '--val-dir',
+              help='validation directory; if name starts with "val_images." '
+                   'preds will be saved to file named accordingly in preds '
+                   'directory')
+@click.option('-p', '--preds-dir', default=DEFAULT_PREDS_DIR,
+              show_default=True)
 @click.option('-v', '--verbose', is_flag=True)
 def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
-         no_threshold_sweep, save_preds, verbose):
+         no_threshold_sweep, save_preds, val_dir, preds_dir, verbose):
+
+    if val_dir:
+        paths = [str(p) for p in get_image_files(val_dir)]
+        model_version = get_model_version(model_path)
+        val_dir_version = get_val_dir_version(val_dir)
+
+        if val_dir_version and model_version:
+            fname = f'model-{model_version}.pkl-val.{val_dir_version}.csv'
+            save_preds = join(preds_dir, fname)
 
     if save_preds and exists(save_preds):
         sys.exit(f'E: file exists: {save_preds}')
@@ -112,8 +143,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     y_pred = []
     y_true = []
 
-    paths = [line.strip() for line in sys.stdin]
+    paths = paths or [line.strip() for line in sys.stdin]
     known_classes = validate_paths(paths, classes)
+    paths = [p for p in paths if parent_label(p) in known_classes]
     last_time = time.time()
 
     for j, path in enumerate(paths):
@@ -125,10 +157,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
             last_time = now
 
         correct_label = parent_label(path)
-        if correct_label not in known_classes:
-            if verbose:
-                print(f'I: unknown class {correct_label}, skipping')
-            continue
+        assert correct_label in known_classes, correct_label
         correct_label_index = list(learn.dls.vocab).index(correct_label)
 
         if path.endswith('.ogg'):
@@ -192,6 +221,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
                              fine_threshold, 'fine threshold')
 
     if save_preds:
+        assert len(paths) == y_pred.shape[0], (len(paths), y_pred.shape)
         df = pd.DataFrame(dict(path=paths, **dict(zip(classes, y_pred.T))))
         df.to_csv(save_preds)
 
