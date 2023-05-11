@@ -1,8 +1,17 @@
 
+import os
+
+from collections import defaultdict
 from itertools import chain, combinations
+
+from os.path import basename, exists, join
 
 import numpy as np
 import pandas as pd
+
+from fastai.data.all import parent_label
+
+from .hashfile import file_sha1
 
 
 def set_intersections(sets, digits=6):
@@ -66,3 +75,60 @@ class SoundEventDetectionFilter:
 
     def __contains__(self, sha1):
         return all([sha1 in hashes for hashes in self.nse_hashes])
+
+    def relabel_files(self, dir_):
+        nse_dir = join(dir_, 'NSE')
+        os.makedirs(nse_dir, exist_ok=True)
+
+        is_train = 'train' in basename(dir_)
+        if not is_train:
+            assert 'val' in basename(dir_), basename(dir_)
+
+        # for a training dataset we need at least three examples per class for
+        # the split, so keep track of the NSE examples here and do not relabel
+        # any example until we know we have more than three.
+        nse_hashes = defaultdict(set)
+        good_hashes = defaultdict(set)
+        nse_paths = defaultdict(list)
+
+        for root, dirs, files in os.walk(dir_):
+
+            for name in files:
+                if not name.endswith('.png'):
+                    continue
+
+                path = join(root, name)
+                label = parent_label(path)
+                sha1 = file_sha1(path)
+
+                if sha1 in self:
+                    nse_hashes[label].add(sha1)
+                    nse_paths[sha1].append(path)
+                else:
+                    good_hashes[label].add(sha1)
+
+        nse_count = sum(len(s) for s in nse_hashes.values())
+        print(f'I: identified {nse_count} NSE example hashes')
+
+        move_count = 0
+        save_count = 0
+
+        for label, nse in nse_hashes.items():
+            if is_train:
+                nse = list(nse)
+                np.random.shuffle(nse)
+
+                n_good = len(good_hashes[label])
+                while n_good < 3 and nse:
+                    sha1 = nse.pop()
+                    save_count += len(nse_paths[sha1])
+                    n_good += 1
+
+            while nse:
+                sha1 = nse.pop()
+                for path in nse_paths[sha1]:
+                    os.rename(path, join(nse_dir, basename(path)))
+                    move_count += 1
+
+        print(f'I: relabeled {move_count} NSE example files')
+        print(f'I: passed on relabeling {save_count} NSE example files')

@@ -3,10 +3,9 @@ import os
 import sys
 import warnings
 
-from collections import defaultdict
 from datetime import datetime
 from functools import partial
-from os.path import abspath, basename, isdir, join
+from os.path import abspath, isdir, join
 
 import click
 import matplotlib.pyplot as plt
@@ -24,7 +23,6 @@ from adak.augment import HTrans
 from adak.check import check_images
 from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
-from adak.hashfile import file_sha1
 from adak.pretrain import make_pretrain_learner
 from adak.sed import SoundEventDetectionFilter
 
@@ -70,59 +68,9 @@ def setup_nsed(classes, config, nse_file, nse_threshold):
     assert 'NSE' not in classes
     classes.add('NSE')
 
-    nse_dir = join(config.combined_images_dir, 'NSE')
-    os.makedirs(nse_dir, exist_ok=True)
-
     print('Relabeling NSE examples...')
     sed = SoundEventDetectionFilter(nse_file, threshold=nse_threshold)
-
-    # we need at least three examples per class for the split, so keep track of
-    # the NSE examples here and do not relabel any example until we know we
-    # have more than three.
-    nse_hashes = defaultdict(set)
-    good_hashes = defaultdict(set)
-    nse_paths = defaultdict(list)
-
-    for root, dirs, files in os.walk(config.combined_images_dir):
-
-        for name in files:
-            if not name.endswith('.png'):
-                continue
-
-            path = join(root, name)
-            label = parent_label(path)
-            sha1 = file_sha1(path)
-
-            if sha1 in sed:
-                nse_hashes[label].add(sha1)
-                nse_paths[sha1].append(path)
-            else:
-                good_hashes[label].add(sha1)
-
-    nse_count = sum(len(s) for s in nse_hashes.values())
-    print(f'I: identified {nse_count} NSE example hashes')
-
-    move_count = 0
-    save_count = 0
-
-    for label, nse in nse_hashes.items():
-        nse = list(nse)
-        np.random.shuffle(nse)
-
-        n_good = len(good_hashes[label])
-        while n_good < 3 and nse:
-            sha1 = nse.pop()
-            save_count += len(nse_paths[sha1])
-            n_good += 1
-
-        while nse:
-            sha1 = nse.pop()
-            for path in nse_paths[sha1]:
-                os.rename(path, join(nse_dir, basename(path)))
-                move_count += 1
-
-    print(f'I: relabeled {move_count} NSE example files')
-    print(f'I: passed on relabeling {save_count} NSE example files')
+    sed.relabel_files(config.combined_images_dir)
     print()
 
 
