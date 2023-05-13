@@ -133,6 +133,14 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     learn = load_learner(model_path)
     classes = np.array(learn.dls.vocab)
+
+    nse_val_dir = re.search('nse_\d+.\d+_0.\d+', val_dir_version)
+    if nse_val_dir and 'NSE' not in classes:
+        classes = np.array(list(classes) + ['NSE'])
+        add_nse_column = True
+    else:
+        add_nse_column = False
+
     resize = Resize(InferenceConfig.n_mels)
     config = InferenceConfig.from_dict(audio_dir=audio_dir)
     expected_img_size = (config.n_mels, config.frame_width)
@@ -145,7 +153,6 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     paths = paths or [line.strip() for line in sys.stdin]
     known_classes = validate_paths(paths, classes)
-    paths = [p for p in paths if parent_label(p) in known_classes]
     last_time = time.time()
 
     for j, path in enumerate(paths):
@@ -158,7 +165,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
         y = parent_label(path)
         assert y in known_classes, y
-        y_index = list(learn.dls.vocab).index(y)
+        y_index = list(classes).index(y)
 
         if path.endswith('.ogg'):
             images = get_images_from_audio(path, quick, quicker, config, resize)
@@ -171,6 +178,10 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
         with learn.no_bar():
             preds = np.stack([learn.predict(img)[2].numpy() for img in images])
+
+        if add_nse_column:
+            preds = np.hstack([preds, np.zeros((1, len(images)))])
+
         assert preds.shape[1] == len(classes), preds[0]
 
         top5 = [classes[pred.argsort()[-5:]] for pred in preds]
