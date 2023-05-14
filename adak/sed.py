@@ -130,5 +130,9 @@ class SoundEventDetectionFilter:
                     os.rename(path, join(nse_dir, basename(path)))
                     move_count += 1
 
+                # a hash can be referenced by multiple labels.  so, clear the
+                # list after moving files (or else encounter FileNotFoundError)
+                nse_paths[sha1] = []
+
         print(f'I: relabeled {move_count} NSE example files')
         print(f'I: passed on relabeling {save_count} NSE example files')
