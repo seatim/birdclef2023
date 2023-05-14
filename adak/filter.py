@@ -40,11 +40,6 @@ def fine_threshold(preds, threshold, assert_input_is_normalized=False):
     return np.stack([fine_threshold(pred) for pred in np.array(preds)])
 
 
-def sum_filter(preds, threshold):
-    return np.stack([(np.zeros(len(pred)) if sum(pred) < threshold else pred)
-                     for pred in np.array(preds)])
-
-
 def max_filter(preds, threshold):
     return np.stack([(np.zeros(len(pred)) if max(pred) < threshold else pred)
                      for pred in np.array(preds)])

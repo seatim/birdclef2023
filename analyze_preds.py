@@ -18,7 +18,7 @@ from tabulate import tabulate
 
 from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
                            slice_by_class_subset)
-from adak.filter import do_filter_top_k, fine_threshold, sum_filter, max_filter
+from adak.filter import do_filter_top_k, fine_threshold, max_filter
 from adak.hashfile import file_sha1
 
 
@@ -149,10 +149,6 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
         best_ap_score, verbose)
 
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', sum_filter, 'sum filter', best_ap_score,
-        verbose)
-
-    sweep_preds_AP_score(
         y_pred, ap_score, ps, 'p', max_filter, 'max filter', best_ap_score,
         verbose)
 
@@ -172,10 +168,6 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', fine_threshold,
             'fine threshold over bc23 classes', best_ap_score_b, verbose)
-
-        sweep_preds_AP_score(
-            y_pred_b, ap_score_b, ps, 'p', sum_filter,
-            'sum filter over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', max_filter,
