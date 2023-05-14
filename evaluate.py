@@ -159,7 +159,8 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
         now = time.time()
         if now - last_time > 0.1:
-            print(f'Inferring {path} [{j}/{len(paths)}]...', end='\r',
+            short_name = os.sep.join(path.split(os.sep)[-2:])
+            print(f'Inferring {short_name} [{j}/{len(paths)}]...', end='\r',
                   flush=True)
             last_time = now
 
