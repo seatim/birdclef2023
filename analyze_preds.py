@@ -102,7 +102,7 @@ def report_essentials(df, bc23_classes, do_bc23):
 
 
 def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc,
-                         best_ap_score):
+                         best_ap_score, verbose):
 
     y_preds = [func(y_pred, x) for x in values]
     ap_scores = [ap_score(y_pred_x) for y_pred_x in y_preds]
@@ -113,14 +113,24 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc,
     else:
         table = [ap_scores]
 
-    print()
-    print(f'AP scores for {desc}:')
-    print()
-    print(tabulate(table, headers=values))
-    print()
+    if verbose:
+        print()
+        print(f'AP scores for {desc}:')
+        print()
+        print(tabulate(table, headers=values))
+        print()
+
+    elif any(beats):
+        i = np.array(ap_scores).argmax()
+        print(f'AP score for {desc}, {param_name}={values[i]}: '
+              f'{ap_scores[i]:.4f}')
+    else:
+        print(f'no better AP scores were found by {desc}')
 
 
-def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b):
+def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
+                  verbose):
+
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
 
@@ -131,18 +141,20 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b):
     ks = (3, 5, 13, 36, 98, 264)
     sweep_preds_AP_score(
         y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter',
-        best_ap_score)
+        best_ap_score, verbose)
 
     ps = list(reversed((1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)))
     sweep_preds_AP_score(
         y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold',
-        best_ap_score)
+        best_ap_score, verbose)
 
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', sum_filter, 'sum filter', best_ap_score)
+        y_pred, ap_score, ps, 'p', sum_filter, 'sum filter', best_ap_score,
+        verbose)
 
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', max_filter, 'max filter', best_ap_score)
+        y_pred, ap_score, ps, 'p', max_filter, 'max filter', best_ap_score,
+        verbose)
 
     if do_bc23:
         y_pred_b, y_true_b = slice_by_class_subset(
@@ -155,19 +167,21 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b):
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ks, 'k', do_filter_top_k,
-            'top-k filter over bc23 classes', best_ap_score_b)
+            'top-k filter over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', fine_threshold,
-            'fine threshold over bc23 classes', best_ap_score_b)
+            'fine threshold over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', sum_filter,
-            'sum filter over bc23 classes', best_ap_score_b)
+            'sum filter over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', max_filter,
-            'max filter over bc23 classes', best_ap_score_b)
+            'max filter over bc23 classes', best_ap_score_b, verbose)
+
+    print()
 
 
 def show_dist(series, desc, show_hist):
@@ -251,8 +265,9 @@ def hash_files(df):
 @click.option('-e', '--list-nse-candidates', is_flag=True)
 @click.option('-k', '--skip-bc23-classes', is_flag=True)
 @click.option('-m', '--make-nse-file', is_flag=True)
+@click.option('-v', '--verbose', is_flag=True)
 def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
-         list_nse_candidates, skip_bc23_classes, make_nse_file):
+         list_nse_candidates, skip_bc23_classes, make_nse_file, verbose):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
@@ -282,7 +297,7 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
     ap_score, ap_score_b = report_essentials(df, bc23_classes, do_bc23)
 
     if do_sweeps:
-        report_sweeps(df, bc23_classes, do_bc23, ap_score, ap_score_b)
+        report_sweeps(df, bc23_classes, do_bc23, ap_score, ap_score_b, verbose)
 
     if show_stats:
         qualifier = 'all ' if set(all_classes) != set(bc23_classes) else ''
