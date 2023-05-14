@@ -66,6 +66,7 @@ def report_essentials(df, bc23_classes, do_bc23):
     n_top5 = calculate_n_top_n(y_pred, y_true, classes, 5)
     ap_score = avg_precision_over_subset(
         y_pred, y_true, classes, set(classes) - set(missing_classes))
+    ap_score_b = None
 
     print()
     if set(classes) == set(bc23_classes):
@@ -97,19 +98,29 @@ def report_essentials(df, bc23_classes, do_bc23):
         print(f'average precision score: {ap_score_b:.3f}')
         print()
 
+    return ap_score, ap_score_b
 
-def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc):
+
+def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc,
+                         best_ap_score):
+
     y_preds = [func(y_pred, x) for x in values]
     ap_scores = [ap_score(y_pred_x) for y_pred_x in y_preds]
+    beats = ['^^^^^^^' if score > best_ap_score else '' for score in ap_scores]
+
+    if any(beats):
+        table = [['%.5f' % score for score in ap_scores], beats]
+    else:
+        table = [ap_scores]
 
     print()
     print(f'AP scores for {desc}:')
     print()
-    print(tabulate([ap_scores], headers=values))
+    print(tabulate(table, headers=values))
     print()
 
 
-def report_sweeps(df, bc23_classes, do_bc23):
+def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b):
     classes, missing_classes, y_pred, y_true = \
         df.classes, df.missing_classes, df.y_pred, df.y_true
 
@@ -119,17 +130,19 @@ def report_sweeps(df, bc23_classes, do_bc23):
 
     ks = (3, 5, 13, 36, 98, 264)
     sweep_preds_AP_score(
-        y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter')
+        y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter',
+        best_ap_score)
 
     ps = list(reversed((1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)))
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold')
+        y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold',
+        best_ap_score)
 
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', sum_filter, 'sum filter')
+        y_pred, ap_score, ps, 'p', sum_filter, 'sum filter', best_ap_score)
 
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', max_filter, 'max filter')
+        y_pred, ap_score, ps, 'p', max_filter, 'max filter', best_ap_score)
 
     if do_bc23:
         y_pred_b, y_true_b = slice_by_class_subset(
@@ -142,19 +155,19 @@ def report_sweeps(df, bc23_classes, do_bc23):
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ks, 'k', do_filter_top_k,
-            'top-k filter over bc23 classes')
+            'top-k filter over bc23 classes', best_ap_score_b)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', fine_threshold,
-            'fine threshold over bc23 classes')
+            'fine threshold over bc23 classes', best_ap_score_b)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', sum_filter,
-            'sum filter over bc23 classes')
+            'sum filter over bc23 classes', best_ap_score_b)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, ps, 'p', max_filter,
-            'max filter over bc23 classes')
+            'max filter over bc23 classes', best_ap_score_b)
 
 
 def show_dist(series, desc, show_hist):
@@ -266,10 +279,10 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
             message='Pandas doesn\'t allow columns to be created via a new')
     add_df_attrs(df)
 
-    report_essentials(df, bc23_classes, do_bc23)
+    ap_score, ap_score_b = report_essentials(df, bc23_classes, do_bc23)
 
     if do_sweeps:
-        report_sweeps(df, bc23_classes, do_bc23)
+        report_sweeps(df, bc23_classes, do_bc23, ap_score, ap_score_b)
 
     if show_stats:
         qualifier = 'all ' if set(all_classes) != set(bc23_classes) else ''
