@@ -19,7 +19,6 @@ from tabulate import tabulate
 from adak.augment import HTrans, htrans_mat  # needed by some learners
 from adak.config import InferenceConfig
 from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
-from adak.filter import do_filter_top_k, fine_threshold
 from adak.transform import images_from_audio, image_width
 
 DEFAULT_PREDS_DIR = 'data/preds'
@@ -125,19 +124,6 @@ def load_image(path):
     return img
 
 
-def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
-                         func, desc):
-    y_preds = [func(y_pred, x) for x in values]
-    ap_scores = [ap_score(y_pred_x) for y_pred_x in y_preds]
-
-    if any(score > best_ap_score for x, score in zip(values, ap_scores)):
-        i = np.array(ap_scores).argmax()
-        print(f'average precision score, {param_name}={values[i]}: '
-              f'{ap_scores[i]:.3f}')
-    else:
-        print(f'no better AP scores were found by {desc}')
-
-
 @click.command()
 @click.argument('model_path', nargs=-1)
 @click.option('-a', '--audio-dir', default=InferenceConfig.audio_dir,
@@ -151,8 +137,6 @@ def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
                    'to those inferred by the --quick option!!!  These images '
                    'are contrast- and brightness-altered variants of those '
                    'inferred by the --quick option.')
-@click.option('-K', '--no-top-k-filter-sweep', is_flag=True)
-@click.option('-P', '--no-threshold-sweep', is_flag=True)
 @click.option('-s', '--save-preds', help='path to file to save preds to')
 @click.option('-S', '--val-dir',
               help='validation directory; if name starts with "val_images." '
@@ -161,8 +145,8 @@ def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
 @click.option('-p', '--preds-dir', default=DEFAULT_PREDS_DIR,
               show_default=True)
 @click.option('-v', '--verbose', is_flag=True)
-def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
-         no_threshold_sweep, save_preds, val_dir, preds_dir, verbose):
+def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
+         verbose):
 
     if val_dir:
         paths = [str(p) for p in get_image_files(val_dir)]
@@ -272,16 +256,6 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     best_ap_score = ap_score(y_pred)
     print(f'average precision score: {best_ap_score:.3f}')
-
-    if not no_top_k_filter_sweep:
-        ks = (3, 5, 13, 36, 98, 264)
-        sweep_preds_AP_score(y_pred, ap_score, best_ap_score, ks, 'k',
-                             do_filter_top_k, 'top-k filter')
-
-    if not no_threshold_sweep:
-        ps = (1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)
-        sweep_preds_AP_score(y_pred, ap_score, best_ap_score, ps, 'p',
-                             fine_threshold, 'fine threshold')
 
     if save_preds:
         assert len(paths) == y_pred.shape[0], (len(paths), y_pred.shape)
