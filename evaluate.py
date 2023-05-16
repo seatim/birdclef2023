@@ -166,6 +166,9 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
         if val_dir_version and model_version:
             fname = f'model-{model_version}.pkl-val.{val_dir_version}.csv'
             save_preds = join(preds_dir, fname)
+    else:
+        paths = None
+        val_dir_version = ''
 
     if save_preds and exists(save_preds):
         sys.exit(f'E: file exists: {save_preds}')
