@@ -1,4 +1,5 @@
 
+import math
 import os
 import re
 import sys
@@ -49,6 +50,7 @@ class EnsembleLearner:
         self.learners = [load_learner(path) for path in model_paths]
         self.dls = self.learners[0].dls
         self.indices = [None] * (len(model_paths) - 1)
+        self.diff_info = []
 
         for k, learner in enumerate(self.learners[1:]):
             if self.dls.vocab == learner.dls.vocab:
@@ -71,6 +73,10 @@ class EnsembleLearner:
                     preds.append(learn.predict(img)[2][indices])
                 else:
                     preds.append(learn.predict(img)[2])
+
+        for pred in preds[1:]:
+            L0_diff = float(sum(abs(pred - preds[0])))
+            self.diff_info.append((float(max(pred)), L0_diff))
 
         return None, None, sum(preds) / len(self.learners)
 
@@ -281,6 +287,22 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
         assert len(paths) == y_pred.shape[0], (len(paths), y_pred.shape)
         df = pd.DataFrame(dict(path=paths, **dict(zip(classes, y_pred.T))))
         df.to_csv(save_preds)
+
+    if hasattr(learn, 'diff_info'):
+        df = pd.DataFrame(learn.diff_info, columns=('max_pred', 'L0_diff'))
+        print('Ensemble diff info:')
+        print()
+        print(df.head())
+        print()
+        print(df.describe().T)
+        print()
+        corr_matrix = np.corrcoef(list(zip(*df.values)))
+        assert corr_matrix.shape == (2, 2), corr_matrix.shape
+        a, b, c, d = corr_matrix.flatten()
+        assert math.isclose(a, 1), a
+        assert math.isclose(d, 1), d
+        assert math.isclose(b, c), (b, c)
+        print('correlation:', b)
 
 
 if __name__ == '__main__':
