@@ -122,8 +122,9 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc,
 
     elif any(beats):
         i = np.array(ap_scores).argmax()
+        pc_better = 100 * (ap_scores[i] - best_ap_score) / best_ap_score
         print(f'AP score for {desc}, {param_name}={values[i]}: '
-              f'{ap_scores[i]:.4f}')
+              f'{ap_scores[i]:.3f} ({pc_better:.1f} % better)')
     else:
         print(f'no better AP scores were found by {desc}')
 
