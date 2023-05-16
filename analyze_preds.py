@@ -139,18 +139,19 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
         return avg_precision_over_subset(
             y_pred, y_true, classes, set(classes) - set(missing_classes))
 
-    ks = (3, 5, 13, 36, 98, 264)
+    ks = (98, 137, 201, 233, 249, 257, 261, 263, 264)
     sweep_preds_AP_score(
         y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter',
         best_ap_score, verbose)
 
-    ps = list(reversed((1e-4, 1e-3, 0.01, 0.1, 0.2, 0.5, 0.9)))
+    ftps = list(reversed((1e-7, 1e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3)))
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', fine_threshold, 'fine threshold',
+        y_pred, ap_score, ftps, 'p', fine_threshold, 'fine threshold',
         best_ap_score, verbose)
 
+    mfps = list(reversed([0.01 * x for x in range(1, 11)]))
     sweep_preds_AP_score(
-        y_pred, ap_score, ps, 'p', max_filter, 'max filter', best_ap_score,
+        y_pred, ap_score, mfps, 'p', max_filter, 'max filter', best_ap_score,
         verbose)
 
     if do_bc23:
@@ -167,11 +168,11 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
             'top-k filter over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
-            y_pred_b, ap_score_b, ps, 'p', fine_threshold,
+            y_pred_b, ap_score_b, ftps, 'p', fine_threshold,
             'fine threshold over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
-            y_pred_b, ap_score_b, ps, 'p', max_filter,
+            y_pred_b, ap_score_b, mfps, 'p', max_filter,
             'max filter over bc23 classes', best_ap_score_b, verbose)
 
     print()
