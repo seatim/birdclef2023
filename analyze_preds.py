@@ -106,10 +106,10 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc,
 
     y_preds = [func(y_pred, x) for x in values]
     ap_scores = [ap_score(y_pred_x) for y_pred_x in y_preds]
-    beats = ['^^^^^^^' if score > best_ap_score else '' for score in ap_scores]
+    beats = ['^^^^^' if score > best_ap_score else '' for score in ap_scores]
 
     if any(beats):
-        table = [['%.5f' % score for score in ap_scores], beats]
+        table = [['%.3f' % score for score in ap_scores], beats]
     else:
         table = [ap_scores]
 
@@ -117,7 +117,7 @@ def sweep_preds_AP_score(y_pred, ap_score, values, param_name, func, desc,
         print()
         print(f'AP scores for {desc}:')
         print()
-        print(tabulate(table, headers=values))
+        print(tabulate(table, headers=values, floatfmt='.3f'))
         print()
 
     elif any(beats):
