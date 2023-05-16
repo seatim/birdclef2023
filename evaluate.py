@@ -48,10 +48,16 @@ class EnsembleLearner:
     def __init__(self, model_paths):
         self.learners = [load_learner(path) for path in model_paths]
         self.dls = self.learners[0].dls
+        self.indices = [None] * (len(model_paths) - 1)
 
-        for learner in self.learners[1:]:
-            if self.dls.vocab != learner.dls.vocab:
-                sys.exit('E: models have different vocabularies')
+        for k, learner in enumerate(self.learners[1:]):
+            if self.dls.vocab == learner.dls.vocab:
+                pass
+            elif set(self.dls.vocab) - set(learner.dls.vocab) == set():
+                self.indices[k] = [list(learner.dls.vocab).index(name)
+                                   for name in self.dls.vocab]
+            else:
+                sys.exit('E: models have incompatible vocabularies')
 
     def no_bar(self):
         return BaseCM()
@@ -59,9 +65,12 @@ class EnsembleLearner:
     def predict(self, img):
         preds = []
 
-        for learn in self.learners:
+        for indices, learn in zip([None] + self.indices, self.learners):
             with learn.no_bar():
-                preds.append(learn.predict(img)[2])
+                if indices:
+                    preds.append(learn.predict(img)[2][indices])
+                else:
+                    preds.append(learn.predict(img)[2])
 
         return None, None, sum(preds) / len(self.learners)
 
