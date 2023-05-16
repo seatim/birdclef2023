@@ -19,7 +19,7 @@ from tabulate import tabulate
 from adak.augment import HTrans, htrans_mat  # needed by some learners
 from adak.config import InferenceConfig
 from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
-from adak.transform import images_from_audio, image_width
+from adak.transform import images_from_audio
 
 DEFAULT_PREDS_DIR = 'data/preds'
 
