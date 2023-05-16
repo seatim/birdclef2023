@@ -36,6 +36,36 @@ def get_val_dir_version(path):
         return path[11:]
 
 
+class BaseCM:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, a, b, c):
+        pass
+
+
+class EnsembleLearner:
+    def __init__(self, model_paths):
+        self.learners = [load_learner(path) for path in model_paths]
+        self.dls = self.learners[0].dls
+
+        for learner in self.learners[1:]:
+            if self.dls.vocab != learner.dls.vocab:
+                sys.exit('E: models have different vocabularies')
+
+    def no_bar(self):
+        return BaseCM()
+
+    def predict(self, img):
+        preds = []
+
+        for learn in self.learners:
+            with learn.no_bar():
+                preds.append(learn.predict(img)[2])
+
+        return None, None, sum(preds) / len(self.learners)
+
+
 def validate_paths(paths, model_classes):
     if not all(os.sep in path for path in paths):
         raise ValueError('paths must have parent directory as label')
@@ -94,7 +124,7 @@ def sweep_preds_AP_score(y_pred, ap_score, best_ap_score, values, param_name,
 
 
 @click.command()
-@click.argument('model_path')
+@click.argument('model_path', nargs=-1)
 @click.option('-a', '--audio-dir', default=InferenceConfig.audio_dir,
               show_default=True)
 @click.option('-q', '--quick', is_flag=True,
@@ -121,7 +151,7 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
 
     if val_dir:
         paths = [str(p) for p in get_image_files(val_dir)]
-        model_version = get_model_version(model_path)
+        model_version = '+'.join(get_model_version(p) for p in model_path)
         val_dir_version = get_val_dir_version(val_dir)
 
         if val_dir_version and model_version:
@@ -131,7 +161,10 @@ def main(model_path, audio_dir, quick, quicker, no_top_k_filter_sweep,
     if save_preds and exists(save_preds):
         sys.exit(f'E: file exists: {save_preds}')
 
-    learn = load_learner(model_path)
+    if len(model_path) > 1:
+        learn = EnsembleLearner(model_path)
+    else:
+        learn = load_learner(model_path[0])
     classes = np.array(learn.dls.vocab)
 
     nse_val_dir = re.search('nse_\d+.\d+_0.\d+', val_dir_version)
