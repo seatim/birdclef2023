@@ -45,7 +45,10 @@ class BaseCM:
 
 
 class EnsembleLearner:
-    def __init__(self, model_paths):
+    ACCEPTANCE_THRESHOLDS = (0.5, 0.25)
+
+    def __init__(self, model_paths, efficient=False):
+        assert model_paths, 'need at least one model'
         self.learners = [load_learner(path) for path in model_paths]
 
         # find minimal vocabulary
@@ -56,6 +59,8 @@ class EnsembleLearner:
 
         self.indices = [None] * len(model_paths)
         self.diff_info = []
+        self.efficient = efficient
+        self.prediction_count = 0
 
         for k, learner in enumerate(self.learners):
             if self.dls.vocab == learner.dls.vocab:
@@ -66,24 +71,64 @@ class EnsembleLearner:
             else:
                 sys.exit('E: models have incompatible vocabularies')
 
+    @classmethod
+    def get_threshold(cls, k):
+        if k >= len(cls.ACCEPTANCE_THRESHOLDS):
+            return cls.ACCEPTANCE_THRESHOLDS[-1]
+        else:
+            return cls.ACCEPTANCE_THRESHOLDS[k]
+
     def no_bar(self):
         return BaseCM()
 
-    def predict(self, img):
-        preds = []
+    def _predict(self, img, k):
+        self.prediction_count += 1
 
-        for indices, learn in zip(self.indices, self.learners):
-            with learn.no_bar():
-                if indices:
-                    preds.append(learn.predict(img)[2][indices])
-                else:
-                    preds.append(learn.predict(img)[2])
+        learn = self.learners[k]
+        indices = self.indices[k]
+
+        with learn.no_bar():
+            if indices:
+                return learn.predict(img)[2][indices]
+            else:
+                return learn.predict(img)[2]
+
+    def _efficient_preds(self, img):
+        preds = [self._predict(img, 0)]
+        k = 0
+
+        while max(preds[0]) < self.get_threshold(k):
+            k += 1
+            if k == len(self.learners):
+                break
+            preds.append(self._predict(img, k))
+
+        return preds
+
+    def predict(self, img):
+        if self.efficient:
+            preds = self._efficient_preds(img)
+        else:
+            preds = [self._predict(img, k) for k in range(len(self.learners))]
 
         for pred in preds[1:]:
             L0_diff = float(sum(abs(pred - preds[0])))
             self.diff_info.append((float(max(pred)), L0_diff))
 
-        return None, None, sum(preds) / len(self.learners)
+        return None, None, sum(preds) / len(preds)
+
+
+def validate_acceptance_thresholds(thresholds):
+    try:
+        thresholds = [float(x) for x in thresholds.split(',')]
+    except ValueError:
+        sys.exit(
+            'E: acceptance thresholds must be comma-separated list of floats')
+
+    if not all(0 < x < 1 for x in thresholds):
+        sys.exit('E: acceptance thresholds must be between 0 and 1')
+
+    return thresholds
 
 
 def validate_paths(paths, model_classes):
@@ -150,13 +195,30 @@ def load_image(path):
                    'directory')
 @click.option('-p', '--preds-dir', default=DEFAULT_PREDS_DIR,
               show_default=True)
+@click.option('-e', '--efficient', is_flag=True)
+@click.option('-t', '--acceptance-thresholds',
+              help='comma-separated list of floats')
 @click.option('-v', '--verbose', is_flag=True)
 def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
-         verbose):
+         efficient, acceptance_thresholds, verbose):
+
+    if acceptance_thresholds:
+        thresholds = validate_acceptance_thresholds(acceptance_thresholds)
+        EnsembleLearner.ACCEPTANCE_THRESHOLDS = thresholds
+
+        if not efficient:
+            efficient = True
+            print('I: setting efficient = True due to use of '
+                  '--acceptance-thresholds')
+    else:
+        acceptance_thresholds = ','.join(
+            [str(x) for x in EnsembleLearner.ACCEPTANCE_THRESHOLDS])
 
     if val_dir:
         paths = [str(p) for p in get_image_files(val_dir)]
         model_version = '+'.join(get_model_version(p) for p in model_path)
+        if efficient:
+            model_version += f"-eff-{acceptance_thresholds}"
         val_dir_version = get_val_dir_version(val_dir)
 
         if val_dir_version and model_version:
@@ -170,7 +232,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
         sys.exit(f'E: file exists: {save_preds}')
 
     if len(model_path) > 1:
-        learn = EnsembleLearner(model_path)
+        learn = EnsembleLearner(model_path, efficient)
     else:
         learn = load_learner(model_path[0])
     classes = np.array(learn.dls.vocab)
@@ -283,6 +345,10 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
         assert math.isclose(d, 1), d
         assert math.isclose(b, c), (b, c)
         print('correlation:', b)
+
+        if efficient:
+            print()
+            print('prediction count:', learn.prediction_count)
 
 
 if __name__ == '__main__':
