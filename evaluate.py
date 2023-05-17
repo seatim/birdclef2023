@@ -47,11 +47,17 @@ class BaseCM:
 class EnsembleLearner:
     def __init__(self, model_paths):
         self.learners = [load_learner(path) for path in model_paths]
+
+        # find minimal vocabulary
         self.dls = self.learners[0].dls
-        self.indices = [None] * (len(model_paths) - 1)
+        for learner in self.learners[1:]:
+            if set(learner.dls.vocab) - set(self.dls.vocab) == set():
+                self.dls = learner.dls
+
+        self.indices = [None] * len(model_paths)
         self.diff_info = []
 
-        for k, learner in enumerate(self.learners[1:]):
+        for k, learner in enumerate(self.learners):
             if self.dls.vocab == learner.dls.vocab:
                 pass
             elif set(self.dls.vocab) - set(learner.dls.vocab) == set():
@@ -66,7 +72,7 @@ class EnsembleLearner:
     def predict(self, img):
         preds = []
 
-        for indices, learn in zip([None] + self.indices, self.learners):
+        for indices, learn in zip(self.indices, self.learners):
             with learn.no_bar():
                 if indices:
                     preds.append(learn.predict(img)[2][indices])
