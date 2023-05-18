@@ -17,7 +17,7 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
                                RandomSplitter, DataBlock, ImageBlock,
                                CategoryBlock, PILImageBW, get_image_files,
                                parent_label, Resize, Brightness, Contrast,
-                               load_learner, setup_aug_tfms)
+                               load_learner, setup_aug_tfms, RandomErasing)
 
 from adak.augment import HTrans
 from adak.check import check_images
@@ -114,7 +114,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
     item_tfms = Resize(cfg.n_mels)
     batch_tfms = [Brightness(cfg.max_lighting), Contrast(cfg.max_lighting),
-                  HTrans(cfg.max_htrans)]
+                  HTrans(cfg.max_htrans), RandomErasing()]
 
     dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
