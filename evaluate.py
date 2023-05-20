@@ -26,7 +26,7 @@ DEFAULT_PREDS_DIR = 'data/preds'
 
 
 def get_model_version(path):
-    match = re.match('birdclef-model-(\d+.\d+).pkl$', basename(path))
+    match = re.match('birdclef-model-((pretrain-)?\d+.\d+).pkl$', basename(path))
     if match:
         return match.groups()[0]
 
