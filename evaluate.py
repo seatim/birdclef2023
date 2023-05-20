@@ -20,6 +20,7 @@ from adak.augment import HTrans, htrans_mat  # needed by some learners
 from adak.config import InferenceConfig
 from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
 from adak.transform import images_from_audio
+from adak.transform import add_histeq
 
 DEFAULT_PREDS_DIR = 'data/preds'
 
@@ -198,9 +199,10 @@ def load_image(path):
 @click.option('-e', '--efficient', is_flag=True)
 @click.option('-t', '--acceptance-thresholds',
               help='comma-separated list of floats')
+@click.option('-H', '--add-histeq', 'do_add_histeq', is_flag=True)
 @click.option('-v', '--verbose', is_flag=True)
 def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
-         efficient, acceptance_thresholds, verbose):
+         efficient, acceptance_thresholds, do_add_histeq, verbose):
 
     if acceptance_thresholds:
         thresholds = validate_acceptance_thresholds(acceptance_thresholds)
@@ -216,10 +218,14 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
 
     if val_dir:
         paths = [str(p) for p in get_image_files(val_dir)]
+
         model_version = '+'.join(get_model_version(p) for p in model_path)
         if efficient:
             model_version += f"-eff-{acceptance_thresholds}"
+
         val_dir_version = get_val_dir_version(val_dir)
+        if do_add_histeq:
+            val_dir_version += '-heq'
 
         if val_dir_version and model_version:
             fname = f'model-{model_version}.pkl-val.{val_dir_version}.csv'
@@ -275,6 +281,9 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
             images = get_images_from_audio(path, quick, quicker, config, resize)
         else:
             images = [load_image(path)]
+
+        if do_add_histeq:
+            images = [add_histeq(img) for img in images]
 
         if not all(img.shape == expected_img_size for img in images):
             sys.exit(f'E: image size != {expected_img_size}: {path}, '

@@ -116,8 +116,11 @@ def clip_tails(x, n_std=3):
 
 def add_histeq(img):
     if type(img) is not PILImageBW:
-        assert type(img) is TensorCategory, type(img)
-        return img
+        if type(img) is TensorCategory:
+            return img
+        assert type(img) is np.ndarray, type(img)
+        assert img.dtype == np.uint8, img.dtype
+        assert len(img.shape) == 2, img.shape
 
     array = np.array(img) / 255
     clipped = clip_tails(array)
