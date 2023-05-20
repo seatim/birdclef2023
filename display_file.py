@@ -20,11 +20,21 @@ MIN_N_FFT = 128
 MIN_N_MELS = 64
 MAX_N_MELS = 232
 HOP_FACTOR = 2
+MAX_FIGSIZE = (16, 9)
 
 
 def show_or_save(show, save, array, dir_, filename):
     if show:
+        h, w = array.shape
+
+        # add some padding for axes:
+        h += 20
+        w += 20
+
+        MAX_W, MAX_H = MAX_FIGSIZE
+        plt.figure(figsize=(min(MAX_W, (w/h)*MAX_H), min(MAX_H, (h/w)*MAX_W)))
         plt.imshow(array, interpolation='nearest', origin='lower')
+        plt.tight_layout()
         plt.show()
     if save:
         plt.imsave(join(dir_, filename), array, origin='lower')
