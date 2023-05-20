@@ -17,7 +17,7 @@ from adak.config import BaseConfig
 from adak.transform import center_median, clip_tails
 
 MIN_N_FFT = 128
-MIN_N_MELS = 128
+MIN_N_MELS = 64
 MAX_N_MELS = 232
 HOP_FACTOR = 2
 
