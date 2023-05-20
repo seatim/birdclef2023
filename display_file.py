@@ -101,11 +101,13 @@ def histeq(array, dir_, filename, do_show_hist=False):
 @click.option('-Y', '--save-phase-spectrogram', is_flag=True)
 @click.option('-z', '--show-mel-spectrogram', is_flag=True)
 @click.option('-Z', '--save-mel-spectrogram', is_flag=True)
+@click.option('-H', '--save-histeq-spectrograms', is_flag=True)
 @click.option('-o', '--output-dir', default='.', show_default=True)
 def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
          show_magnitude_spectrogram, save_magnitude_spectrogram,
          show_phase_spectrogram, save_phase_spectrogram,
-         show_mel_spectrogram, save_mel_spectrogram, output_dir):
+         show_mel_spectrogram, save_mel_spectrogram, save_histeq_spectrograms,
+         output_dir):
 
     if n_fft < MIN_N_FFT:
         sys.exit(f'E: FFT frame size must be >= {MIN_N_FFT}.')
@@ -165,15 +167,17 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
     # print('M.shape', M.shape)
     assert np.min(M) >= 0, np.min(M)
 
-    if show_mel_spectrogram or save_mel_spectrogram:
-        mel = M * (1 / np.max(M))
-        mel += 1e-9
-        mel = np.log(mel)
-        mel -= np.min(mel)
-        mel *= (1 / np.max(mel))
+    mel = M * (1 / np.max(M))
+    mel += 1e-9
+    mel = np.log(mel)
+    mel -= np.min(mel)
+    mel *= (1 / np.max(mel))
 
+    if show_mel_spectrogram or save_mel_spectrogram:
         show_or_save(show_mel_spectrogram, save_mel_spectrogram, mel,
                      output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
+
+    if save_histeq_spectrograms:
         histeq(mel, output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
 
 
