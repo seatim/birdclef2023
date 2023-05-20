@@ -49,6 +49,7 @@ class TrainConfig(BaseConfig):
     learn_rate = 0.01
     max_lighting = 0.8
     max_htrans = 0.2
+    add_histeq = False
 
 
 class InferenceConfig(BaseConfig):
