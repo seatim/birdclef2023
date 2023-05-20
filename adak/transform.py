@@ -87,3 +87,24 @@ def images_from_audio(path, cfg, max_frames=None):
         n_frames = min(n_frames, max_frames)
 
     return [frame(k) for k in range(0, n_frames)]
+
+
+def center_median(x):
+    assert 0 <= np.min(x) <= 1, np.min(x)
+    assert 0 <= np.max(x) <= 1, np.max(x)
+    median = np.median(x)
+    return np.where(x < median, x*(0.5/median), 0.5+(x-median)*(0.5/(1-median)))
+
+
+def clip_tails(x, n_std=3):
+    assert 0 <= np.min(x) <= 1, np.min(x)
+    assert 0 <= np.max(x) <= 1, np.max(x)
+    median = np.median(x)
+    std = np.std(x)
+    lo = median - n_std*std
+    hi = median + n_std*std
+    assert lo <= hi, (median, std, n_std)
+    x = np.where(x < lo, lo, np.where(x > hi, hi, x))
+    x -= np.min(x)
+    x *= (1/np.max(x))
+    return x

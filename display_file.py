@@ -14,6 +14,7 @@ from skimage import exposure
 from tabulate import tabulate
 
 from adak.config import BaseConfig
+from adak.transform import center_median, clip_tails
 
 MIN_N_FFT = 128
 MIN_N_MELS = 128
@@ -27,27 +28,6 @@ def show_or_save(show, save, array, dir_, filename):
         plt.show()
     if save:
         plt.imsave(join(dir_, filename), array, origin='lower')
-
-
-def center_median(x):
-    assert 0 <= np.min(x) <= 1, np.min(x)
-    assert 0 <= np.max(x) <= 1, np.max(x)
-    median = np.median(x)
-    return np.where(x < median, x*(0.5/median), 0.5+(x-median)*(0.5/(1-median)))
-
-
-def clip_tails(x, n_std=3):
-    assert 0 <= np.min(x) <= 1, np.min(x)
-    assert 0 <= np.max(x) <= 1, np.max(x)
-    median = np.median(x)
-    std = np.std(x)
-    lo = median - n_std*std
-    hi = median + n_std*std
-    assert lo <= hi, (median, std, n_std)
-    x = np.where(x < lo, lo, np.where(x > hi, hi, x))
-    x -= np.min(x)
-    x *= (1/np.max(x))
-    return x
 
 
 def histeq(array, dir_, filename, do_show_hist=False):
