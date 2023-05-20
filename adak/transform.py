@@ -5,6 +5,10 @@ import librosa
 import numpy as np
 import soundfile
 
+from fastai.vision.all import PILImageBW, TensorCategory
+from skimage import exposure
+from PIL import Image
+
 
 class EmptyImage(Exception):
     pass
@@ -108,3 +112,16 @@ def clip_tails(x, n_std=3):
     x -= np.min(x)
     x *= (1/np.max(x))
     return x
+
+
+def add_histeq(img):
+    if type(img) is not PILImageBW:
+        assert type(img) is TensorCategory, type(img)
+        return img
+
+    array = np.array(img) / 255
+    clipped = clip_tails(array)
+    p2, p98 = np.percentile(array, (2, 98))
+    rescaled = exposure.rescale_intensity(array, in_range=(p2, p98))
+    stack = sum([array, clipped, rescaled]) / 3
+    return Image.fromarray((stack * 255).astype(np.uint8), 'L')

@@ -25,6 +25,7 @@ from adak.config import TrainConfig
 from adak.glue import avg_precision, StratifiedSplitter
 from adak.pretrain import make_pretrain_learner
 from adak.sed import SoundEventDetectionFilter
+from adak.transform import add_histeq
 
 
 def handle_missing_classes(classes, classes_present, prune_missing_classes):
@@ -112,7 +113,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     path = cfg.combined_images_dir
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
     splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
-    item_tfms = Resize(cfg.n_mels)
+    item_tfms = [Resize(cfg.n_mels), add_histeq]
     batch_tfms = [Brightness(cfg.max_lighting), Contrast(cfg.max_lighting),
                   HTrans(cfg.max_htrans), RandomErasing()]
 
