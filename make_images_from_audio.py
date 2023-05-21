@@ -191,9 +191,10 @@ def make_images(split_name, audio_files, images_dir, cfg, verbose=False):
 @click.option('-M', '--max-paths-per-class', type=int)
 @click.option('-Z', '--max-classes', type=int)
 @click.option('-f', '--force-overwrite', is_flag=True)
+@click.option('-S', '--no-split', is_flag=True)
 @click.option('-v', '--verbose', is_flag=True)
 def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
-         max_classes, force_overwrite, verbose):
+         max_classes, force_overwrite, no_split, verbose):
 
     if exists(images_dir) and not force_overwrite:
         sys.exit(f'E: {images_dir} exists.  Use "-f" to overwrite it.')
@@ -212,11 +213,15 @@ def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
     audio_files = get_files(audio_dir, '.ogg')
     print(f'Found {len(audio_files)} audio files')
 
-    # Reserve a fraction of files for validation.
-    train, val = train_val_split(audio_files, config)
+    if no_split:
+        make_images('train', audio_files, images_dir, config, verbose)
+    else:
+        # Reserve a fraction of files for validation.
+        train, val = train_val_split(audio_files, config)
 
-    make_images('train', train, images_dir, config, verbose)
-    make_images('val', val, re.sub('train', 'val', images_dir), config, verbose)
+        make_images('train', train, images_dir, config, verbose)
+        make_images('val', val, re.sub('train', 'val', images_dir), config,
+                    verbose)
 
 
 if __name__ == '__main__':
