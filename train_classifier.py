@@ -129,7 +129,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
                        batch_tfms=setup_aug_tfms(batch_tfms))
 
     dls = ImageDataLoaders.from_dblock(dblock, path, path=path)
-    if show_batch:
+    for _ in range(show_batch):
         dls.show_batch()
         plt.show()
     return dls
@@ -150,7 +150,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
 @click.option('-p', '--prune-missing-classes', is_flag=True)
-@click.option('-w', '--show-batch', is_flag=True)
+@click.option('-w', '--show-batch', default=0, show_default=True)
 @click.option('-P', '--pretrained-model')
 @click.option('-N', '--nse-file')
 @click.option('-t', '--nse-threshold', default=0.1, show_default=True)
