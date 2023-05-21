@@ -15,6 +15,7 @@ from fastai.vision.all import (load_learner, parent_label, Resize,
                                get_image_files)
 from PIL import Image
 from tabulate import tabulate
+from torch import tensor
 
 from adak.augment import HTrans, htrans_mat  # needed by some learners
 from adak.config import InferenceConfig
@@ -94,6 +95,19 @@ class EnsembleLearner:
             else:
                 return learn.predict(img)[2]
 
+    def _batch_predict(self, dl, k):
+        self.prediction_count += 1
+
+        learn = self.learners[k]
+        indices = self.indices[k]
+
+        with learn.no_bar():
+            if indices:
+                return tensor(
+                    [x[indices].tolist() for x in learn.get_preds(dl=dl)[0]])
+            else:
+                return learn.get_preds(dl=dl)[0]
+
     def _efficient_preds(self, img):
         preds = [self._predict(img, 0)]
         k = 0
@@ -106,6 +120,9 @@ class EnsembleLearner:
 
         return preds
 
+    def _efficient_batch_preds(self, dl):
+        raise NotImplementedError
+
     def predict(self, img):
         if self.efficient:
             preds = self._efficient_preds(img)
@@ -117,6 +134,14 @@ class EnsembleLearner:
             self.diff_info.append((float(max(pred)), L0_diff))
 
         return None, None, sum(preds) / len(preds)
+
+    def get_preds(self, dl):
+        if self.efficient:
+            preds = self._efficient_batch_preds(dl)
+        else:
+            preds = [self._batch_predict(dl, k) for k in range(len(self.learners))]
+
+        return sum(preds) / len(preds), None
 
 
 def validate_acceptance_thresholds(thresholds):
@@ -289,8 +314,10 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
             sys.exit(f'E: image size != {expected_img_size}: {path}, '
                      f'{list(img.shape for img in images)}')
 
+        batch = learn.dls.test_dl(images)
         with learn.no_bar():
-            preds = np.stack([learn.predict(img)[2].numpy() for img in images])
+            preds, _ = learn.get_preds(dl=batch)
+            preds = np.array(preds)
 
         if add_nse_column:
             preds = np.hstack([preds, np.zeros((1, len(images)))])
@@ -339,7 +366,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
         df = pd.DataFrame(dict(path=paths, **dict(zip(classes, y_pred.T))))
         df.to_csv(save_preds)
 
-    if hasattr(learn, 'diff_info'):
+    if hasattr(learn, 'diff_info') and learn.diff_info:
         df = pd.DataFrame(learn.diff_info, columns=('max_pred', 'L0_diff'))
         print('Ensemble diff info:')
         print()
