@@ -57,8 +57,8 @@ def train_val_split(paths, cfg):
     return paths[train], paths[val]
 
 
-def get_image_addresses(images_by_path, n_images_total, n_samples, label,
-                        config):
+def sample_image_addresses(images_by_path, n_images_total, n_samples, label,
+                           config):
     paths = set(images_by_path.keys())
 
     def addresses_for_path(path):
@@ -128,7 +128,7 @@ def make_images_for_class(label, paths, images_dir, config, verbose=False):
     n_samples = min(config.max_examples_per_class,
                     max(config.min_examples_per_class, n_images_total))
 
-    sample_addresses = get_image_addresses(
+    sample_addresses = sample_image_addresses(
         images_by_path, n_images_total, n_samples, label, config)
 
     indices_by_path = defaultdict(list)
