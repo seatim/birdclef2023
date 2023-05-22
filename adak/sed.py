@@ -1,17 +1,24 @@
 
+import math
 import os
+import warnings
 
 from collections import defaultdict
+from io import BytesIO
 from itertools import chain, combinations
 
 from os.path import basename, exists, join
 
 import numpy as np
 import pandas as pd
+import soundfile
+import webrtcvad
 
 from fastai.data.all import parent_label
 
 from .hashfile import file_sha1
+
+VAD = webrtcvad.Vad(0)
 
 
 def set_intersections(sets, digits=6):
@@ -136,3 +143,64 @@ class SoundEventDetectionFilter:
 
         print(f'I: relabeled {move_count} NSE example files')
         print(f'I: passed on relabeling {save_count} NSE example files')
+
+
+def sound_event_proba(audio, config):
+    """Return sound event probabilities for audio file.
+    """
+    if type(audio) is not np.ndarray:
+        raise ValueError('input must be 1D numpy array of floats')
+    if len(audio.shape) != 1:
+        raise ValueError('input must be 1D numpy array of floats')
+    if audio.dtype != float and audio.dtype != np.float32:
+        raise ValueError('input must be 1D numpy array of floats')
+    if min(audio) < -1.1 or max(audio) > 1.1:
+        warnings.warn(f'audio sample values outside of range (-1.1, 1.1): '
+                      f'min = {min(audio)}, max = {max(audio)}')
+
+    sr = config.sample_rate
+    fd = config.frame_duration
+    fhf = config.frame_hop_factor
+
+    assert sr in (8000, 16000, 32000, 48000), sr
+    assert fhf == int(fhf), fhf
+    assert fd > 0, fd
+    assert fhf > 0, fhf
+
+    # sr * fd must be divisible by fhf for the list comprehension below to work
+    assert int(sr * fd) % int(fhf) == 0, (sr, fd, fhf)
+
+    # "vad" is "voice activity detection" ... each vad frame corresponds to a
+    # spectogram image.
+    hop_length = int(sr * fd) // int(fhf)
+    n_vad_frames = math.ceil(len(audio) / hop_length)
+    vad_frames = [audio[k * hop_length : (k + int(fhf)) * hop_length]
+                  for k in range(n_vad_frames)]
+
+    # "mvf" is "micro vad frame" ... 30 msec long segment of vad frame.
+    mvfd = .03  # 30 msec, selected from options 10, 20, 30
+    bytes_per_mvf = 2 * int(mvfd * sr)
+    mvf_per_vad_frame = int(fd / mvfd)
+
+    def has_sound_event(frame):
+        """Estimate the probability that an audio frame contains a sound event.
+
+        To do this, convert the audio to 16-bit PCM and divide it into 30 ms
+        segments so we can score it with py-webrtcvad.
+
+        """
+        if len(frame) < bytes_per_mvf // 2:
+            return 0
+
+        buf = BytesIO()
+        soundfile.write(buf, frame, sr, 'PCM_16', format='RAW')
+
+        n_mvf = int(len(buf.getvalue()) / bytes_per_mvf)
+        segments = [buf.getvalue()[k * bytes_per_mvf : (k + 1) * bytes_per_mvf]
+                    for k in range(n_mvf)]
+        assert segments, len(frame)
+
+        return sum(VAD.is_speech(segment, sr)
+                   for segment in segments) / mvf_per_vad_frame
+
+    return [has_sound_event(frame) for frame in vad_frames]
