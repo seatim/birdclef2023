@@ -314,10 +314,14 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
             sys.exit(f'E: image size != {expected_img_size}: {path}, '
                      f'{list(img.shape for img in images)}')
 
-        batch = learn.dls.test_dl(images)
         with learn.no_bar():
-            preds, _ = learn.get_preds(dl=batch)
-            preds = np.array(preds)
+            if val_dir:
+                preds = np.stack(
+                    [learn.predict(img)[2].numpy() for img in images])
+            else:
+                batch = learn.dls.test_dl(images)
+                preds, _ = learn.get_preds(dl=batch)
+                preds = np.array(preds)
 
         if add_nse_column:
             preds = np.hstack([preds, np.zeros((1, len(images)))])
