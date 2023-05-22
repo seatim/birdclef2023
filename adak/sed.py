@@ -154,8 +154,8 @@ def sound_event_proba(audio, config):
         raise ValueError('input must be 1D numpy array of floats')
     if audio.dtype != float and audio.dtype != np.float32:
         raise ValueError('input must be 1D numpy array of floats')
-    if min(audio) < -1.1 or max(audio) > 1.1:
-        warnings.warn(f'audio sample values outside of range (-1.1, 1.1): '
+    if min(audio) < -1.4 or max(audio) > 1.4:
+        warnings.warn(f'audio sample values outside of range (-1.4, 1.4): '
                       f'min = {min(audio)}, max = {max(audio)}')
 
     sr = config.sample_rate
