@@ -14,6 +14,7 @@ from skimage import exposure
 from tabulate import tabulate
 
 from adak.config import BaseConfig
+from adak.sed import sound_event_proba
 from adak.transform import center_median, clip_tails
 
 MIN_N_FFT = 128
@@ -149,9 +150,9 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
 
     hop_length = n_fft // HOP_FACTOR
     print('Num. samples / FFT frame:', n_fft)
-    print('Frame duration:', n_fft / sr, 'seconds')
-    print('Hop length:', hop_length)
-    print('Num. frames:', 1 + len(audio) // hop_length)
+    print('FFT frame duration:', n_fft / sr, 'seconds')
+    print('FFT hop length:', hop_length)
+    print('Num. FFT frames:', 1 + len(audio) // hop_length)
     D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
     # print('D.shape', D.shape)
     magnitude, phase = librosa.magphase(D)
@@ -189,6 +190,18 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
 
     if save_histeq_spectrograms:
         histeq(mel, output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
+
+    config = BaseConfig.from_dict(
+        n_mels=n_mels, n_fft=n_fft, hop_length=n_fft // HOP_FACTOR,
+        sample_rate=sr)
+
+    print()
+    print('Sound event probabilities')
+    probs = sound_event_proba(audio, config)
+    print([round(p, 6) for p in probs[:7]], '...' if len(probs) > 7 else '')
+    prob_stats = (min(probs), np.mean(probs), max(probs))
+    print('Num. probs:', len(probs))
+    print('Min/mean/max:', *(round(x, 6) for x in prob_stats))
 
 
 if __name__ == '__main__':
