@@ -4,8 +4,10 @@ import os
 import warnings
 
 from collections import defaultdict
+from functools import reduce
 from io import BytesIO
 from itertools import chain, combinations
+from operator import ior
 
 from os.path import basename, exists, join
 
@@ -33,6 +35,7 @@ class SoundEventDetectionFilter:
         self.paths = list(paths)
         self.dfs = [pd.read_csv(p) for p in self.paths]
         self.threshold = threshold
+        self.all_sha1s = set(reduce(ior, [df.sha1 for df in self.dfs]))
 
         for p, df in zip(paths, self.dfs):
             assert set(df.columns) == self.COLUMNS, (p, df.columns)
@@ -97,9 +100,9 @@ class SoundEventDetectionFilter:
         nse_hashes = defaultdict(set)
         good_hashes = defaultdict(set)
         nse_paths = defaultdict(list)
+        unknown_sha1s = []
 
         for root, dirs, files in os.walk(dir_):
-
             for name in files:
                 if not name.endswith('.png'):
                     continue
@@ -114,8 +117,13 @@ class SoundEventDetectionFilter:
                 else:
                     good_hashes[label].add(sha1)
 
+                if sha1 not in self.all_sha1s:
+                    unknown_sha1s.append(path)
+
         nse_count = sum(len(s) for s in nse_hashes.values())
         print(f'I: identified {nse_count} NSE example hashes')
+        print(f'I: encountered {len(unknown_sha1s)} '
+              f'({len(set(unknown_sha1s))} unique) unknown hashes')
 
         move_count = 0
         save_count = 0
