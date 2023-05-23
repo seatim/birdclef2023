@@ -121,7 +121,20 @@ class EnsembleLearner:
         return preds
 
     def _efficient_batch_preds(self, dl):
-        raise NotImplementedError
+        if len(self.learners) > 2:
+            raise NotImplementedError
+
+        preds = [self._batch_predict(dl, 0)]
+        seconds = [max(pred) < self.get_threshold(0) for pred in preds[0]]
+
+        if not any(seconds):
+            return preds
+
+        preds = [preds[0], preds[0].clone()]
+        indices = [k for k, v in enumerate(seconds) if v]
+        batch = self.dls.test_dl(np.array(dl.items)[indices])
+        preds[1][indices] = self._batch_predict(batch, 1)
+        return preds
 
     def predict(self, img):
         if self.efficient:
@@ -140,6 +153,11 @@ class EnsembleLearner:
             preds = self._efficient_batch_preds(dl)
         else:
             preds = [self._batch_predict(dl, k) for k in range(len(self.learners))]
+
+        for pred in preds[1:]:
+            for pred_i, pred_j in zip(pred, preds[0]):
+                L0_diff = float(sum(abs(pred_i - pred_j)))
+                self.diff_info.append((float(max(pred_i)), L0_diff))
 
         return sum(preds) / len(preds), None
 
@@ -378,17 +396,21 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
         print()
         print(df.describe().T)
         print()
-        corr_matrix = np.corrcoef(list(zip(*df.values)))
-        assert corr_matrix.shape == (2, 2), corr_matrix.shape
-        a, b, c, d = corr_matrix.flatten()
-        assert math.isclose(a, 1), a
-        assert math.isclose(d, 1), d
-        assert math.isclose(b, c), (b, c)
-        print('correlation:', b)
 
-        if efficient:
-            print()
-            print('prediction count:', learn.prediction_count)
+        if not any(df['L0_diff']):
+            print('No difference!  Hmm...')
+        else:
+            corr_matrix = np.corrcoef(list(zip(*df.values)))
+            assert corr_matrix.shape == (2, 2), corr_matrix.shape
+            a, b, c, d = corr_matrix.flatten()
+            assert math.isclose(a, 1), a
+            assert math.isclose(d, 1), d
+            assert math.isclose(b, c), (b, c)
+            print('correlation:', b)
+
+    if efficient:
+        print()
+        print('prediction count:', learn.prediction_count)
 
 
 if __name__ == '__main__':
