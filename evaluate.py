@@ -306,6 +306,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
     paths = paths or [line.strip() for line in sys.stdin]
     known_classes = validate_paths(paths, classes)
     last_time = time.time()
+    inference_time = 0
 
     for j, path in enumerate(paths):
 
@@ -332,6 +333,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
             sys.exit(f'E: image size != {expected_img_size}: {path}, '
                      f'{list(img.shape for img in images)}')
 
+        t0 = time.time()
         with learn.no_bar():
             if val_dir:
                 preds = np.stack(
@@ -340,6 +342,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
                 batch = learn.dls.test_dl(images)
                 preds, _ = learn.get_preds(dl=batch)
                 preds = np.array(preds)
+        inference_time += time.time() - t0
 
         if add_nse_column:
             preds = np.hstack([preds, np.zeros((1, len(images)))])
@@ -369,6 +372,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
     print(f'{n_inferences} inferences')
     print(f'{n_top1} top 1 correct {100 * n_top1 / n_inferences : .1f}%')
     print(f'{n_top5} top 5 correct {100 * n_top5 / n_inferences : .1f}%')
+    print(f'Total inference time {inference_time : .2f} seconds')
 
     y_pred = np.vstack(y_pred)
     y_true = np.hstack(y_true)
