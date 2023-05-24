@@ -243,13 +243,9 @@ def load_image(path):
 @click.option('-t', '--acceptance-thresholds',
               help='comma-separated list of floats')
 @click.option('-H', '--add-histeq', 'do_add_histeq', is_flag=True)
-@click.option('-N', '--no-infer', is_flag=True,
-              help='do not infer inputs, only load and transform inputs; do '
-                   'everything except inference.  this enables calculation of '
-                   'the run time of inference')
 @click.option('-v', '--verbose', is_flag=True)
 def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
-         efficient, acceptance_thresholds, do_add_histeq, no_infer, verbose):
+         efficient, acceptance_thresholds, do_add_histeq, verbose):
 
     if acceptance_thresholds:
         thresholds = validate_acceptance_thresholds(acceptance_thresholds)
@@ -336,9 +332,6 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
             sys.exit(f'E: image size != {expected_img_size}: {path}, '
                      f'{list(img.shape for img in images)}')
 
-        if no_infer:
-            continue
-
         with learn.no_bar():
             if val_dir:
                 preds = np.stack(
@@ -368,9 +361,6 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
 
         y_pred.append(preds)
         y_true.append([y_index] * len(images))
-
-    if no_infer:
-        sys.exit(f'Loaded and transformed {len(paths)} files.')
 
     if not n_inferences:
         sys.exit('No inferences were made.')
