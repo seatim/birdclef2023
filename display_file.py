@@ -9,6 +9,7 @@ import librosa
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import soundfile
 
 from skimage import exposure
 from tabulate import tabulate
@@ -132,7 +133,7 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
     if n_mels & 7:
         sys.exit(f'E: n_mels must be a multiple of 8.')
 
-    audio, sr = librosa.load(path, sr=None)
+    audio, sr = soundfile.read(path)
     assert len(audio.shape) == 1, audio.shape
     print('Sample rate:', sr)
     print('Num. samples:', len(audio))
