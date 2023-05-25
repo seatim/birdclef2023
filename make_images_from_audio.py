@@ -25,7 +25,9 @@ def save_image(img, path):
     Image.fromarray(np.uint8(255*img), 'L').save(path, 'PNG')
 
 
-def ensure_min_two(paths):
+def ensure_minimum_example_counts(paths, valid_pct):
+    minimum = max(2, int(1 / valid_pct))
+
     paths_by_class = defaultdict(list)
     for path in paths:
         paths_by_class[parent_label(path)].append(path)
@@ -34,11 +36,11 @@ def ensure_min_two(paths):
     n_copies = 0
 
     for label, paths in paths_by_class.items():
-        if len(paths) > 1:
-            result.extend(paths)
-        else:
-            result.extend(paths * 2)
-            n_copies += 1
+        if len(paths) < minimum:
+            n_copies += minimum - len(paths)
+            paths = resample(paths, n_samples=minimum)
+
+        result.extend(paths)
 
     return result, n_copies
 
@@ -46,8 +48,8 @@ def ensure_min_two(paths):
 def train_val_split(paths, cfg):
     # split deterministically because we only need to do this once.
     splitter = StratifiedSplitter(cfg.valid_pct, 0)
-    paths, n_copies = ensure_min_two(paths)
-    print(f'Copying {n_copies} files to raise minimum class count for '
+    paths, n_copies = ensure_minimum_example_counts(paths, cfg.valid_pct)
+    print(f'Copying {n_copies} files to ensure minimum example counts for '
           f'train/val split')
     print()
     print('Split stats:')
