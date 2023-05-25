@@ -10,7 +10,9 @@ from train_classifier import main as train_classifier
 
 from . import run_main
 
-IMAGES_DIR = join(dirname(__file__), 'data', 'train_images')
+TEST_DATA_DIR = join(dirname(__file__), 'data')
+IMAGES_DIR = join(TEST_DATA_DIR, 'train_images')
+PRETRAINED_MODEL_PATH = join(TEST_DATA_DIR, 'models', 'testmodel1.pkl')
 
 
 class Test_train_classifier(unittest.TestCase):
@@ -27,4 +29,9 @@ class Test_train_classifier(unittest.TestCase):
     def test1(self):
         args = ['-i', IMAGES_DIR, '-B', '', '-D', '', '-e', '1', '-C',
                 '-I', self.combined_dir]
+        output = run_main(train_classifier, args)
+
+    def test_pretrained_model(self):
+        args = ['-i', IMAGES_DIR, '-B', '', '-D', '', '-e', '1', '-C',
+                '-I', self.combined_dir, '-P', PRETRAINED_MODEL_PATH]
         output = run_main(train_classifier, args)
