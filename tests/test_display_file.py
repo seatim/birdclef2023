@@ -1,6 +1,4 @@
 
-import contextlib
-import io
 import os
 import unittest
 import shutil
@@ -9,8 +7,9 @@ import tempfile
 from unittest.mock import patch
 
 from adak.config import BaseConfig
-from display_file import main
+from display_file import main as display_file
 
+from . import run_main
 from .test_transform import TEST_AUDIO_PATH
 
 
@@ -23,25 +22,15 @@ class Test_display_file(unittest.TestCase):
         self.out_dir = None
 
     def test1(self):
-        f = io.StringIO()
+        args = [TEST_AUDIO_PATH]
+        output = run_main(display_file, args)
 
-        with contextlib.redirect_stdout(f):
-            try:
-                main([TEST_AUDIO_PATH])
-            except SystemExit:
-                pass
-
-        self.assertIn('Sample rate: 32000', f.getvalue())
-        self.assertIn('Num. samples: 2586331', f.getvalue())
+        self.assertIn('Sample rate: 32000', output)
+        self.assertIn('Num. samples: 2586331', output)
 
     def test2(self):
-        f = io.StringIO()
-
-        with contextlib.redirect_stdout(f):
-            try:
-                main([TEST_AUDIO_PATH, '-XYZH', '-o', self.out_dir])
-            except SystemExit:
-                pass
+        args = [TEST_AUDIO_PATH, '-XYZH', '-o', self.out_dir]
+        output = run_main(display_file, args)
 
         n_mels = BaseConfig.n_mels
         n_fft = BaseConfig.n_fft
@@ -57,12 +46,7 @@ class Test_display_file(unittest.TestCase):
 
     @patch('matplotlib.pyplot.show')
     def test3(self, plt_show):
-        f = io.StringIO()
-
-        with contextlib.redirect_stdout(f):
-            try:
-                main([TEST_AUDIO_PATH, '-xyzw', '-l', '12.3'])
-            except SystemExit:
-                pass
+        args = [TEST_AUDIO_PATH, '-xyzw', '-l', '12.3']
+        output = run_main(display_file, args)
 
         self.assertEqual(plt_show.call_count, 4)
