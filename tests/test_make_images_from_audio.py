@@ -34,9 +34,13 @@ class Test_make_images_from_audio(MaskWarnings):
         output = run_main(make_images_from_audio, args)
 
         min_epc = MakeImagesConfig.min_examples_per_class
-        expected_files = [f'XC503001.ogg-{k}-0.png' for k in range(min_epc)]
+        expected_files = {
+            'helgui': [f'XC503001.ogg-{k}-0.png' for k in range(min_epc)],
+            'subbus1': [f'XC390820.ogg-{k}-0.png' for k in range(min_epc)]
+        }
 
         for dir_ in self.train_dir, self.val_dir:
-            self.assertEqual(os.listdir(dir_), ['helgui'])
-            self.assertEqual(set(os.listdir(join(dir_, 'helgui'))),
-                             set(expected_files))
+            self.assertEqual(set(os.listdir(dir_)), set(expected_files.keys()))
+
+            for name, files in expected_files.items():
+                self.assertEqual(set(os.listdir(join(dir_, name))), set(files))
