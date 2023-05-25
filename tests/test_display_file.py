@@ -5,13 +5,12 @@ import os
 import unittest
 import tempfile
 
-from os.path import dirname, join
 from unittest.mock import patch
 
 from adak.config import BaseConfig
 from display_file import main
 
-TEST_AUDIO_PATH = join(dirname(__file__), 'data', 'XC503001.ogg')
+from .test_transform import TEST_AUDIO_PATH
 
 
 class Test_display_file(unittest.TestCase):

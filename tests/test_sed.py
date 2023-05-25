@@ -1,14 +1,12 @@
 
 import unittest
 
-from os.path import dirname, join
-
 import soundfile
 
 from adak.config import BaseConfig
 from adak.sed import sound_event_proba
 
-TEST_AUDIO_PATH = join(dirname(__file__), 'data', 'XC503001.ogg')
+from .test_transform import TEST_AUDIO_PATH
 
 
 class Test_sound_event_proba(unittest.TestCase):

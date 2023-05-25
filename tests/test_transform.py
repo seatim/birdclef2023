@@ -13,7 +13,8 @@ from parameterized import parameterized
 from adak.config import BaseConfig
 from adak.transform import image_from_audio, images_from_audio
 
-TEST_AUDIO_PATH = join(dirname(__file__), 'data', 'XC503001.ogg')
+AUDIO_DIR = join(dirname(__file__), 'data', 'train_audio')
+TEST_AUDIO_PATH = join(AUDIO_DIR, 'helgui', 'XC503001.ogg')
 TEST_AUDIO_PLAY_TIME = 80.822
 
 
