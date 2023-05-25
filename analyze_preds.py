@@ -259,13 +259,16 @@ def hash_files(df):
 @click.option('-e', '--list-nse-candidates', is_flag=True)
 @click.option('-k', '--skip-bc23-classes', is_flag=True)
 @click.option('-m', '--make-nse-file', is_flag=True)
+@click.option('-n', '--nse-file-path')
 @click.option('-v', '--verbose', is_flag=True)
 def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
-         list_nse_candidates, skip_bc23_classes, make_nse_file, verbose):
+         list_nse_candidates, skip_bc23_classes, make_nse_file, nse_file_path,
+         verbose):
 
     if (threshold is not None) and not (0 < threshold < 1):
         sys.exit('E: threshold must be between 0 and 1.')
 
+    preds_path = path
     df = pd.read_csv(path, index_col=0)
     bc23_classes = list(get_bc23_classes(path))
     if set(bc23_classes) - set(df.columns):
@@ -358,7 +361,7 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
         df_nse['path'] = path_column
 
         hash_files(df_nse)
-        output_path = path + '.nsedata.csv'
+        output_path = nse_file_path or preds_path + '.nsedata.csv'
         df_nse.to_csv(output_path, index=False)
         print(f'I: wrote the NSE data to {output_path}')
 
