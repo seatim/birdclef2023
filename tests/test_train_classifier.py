@@ -12,7 +12,7 @@ from . import run_main
 
 TEST_DATA_DIR = join(dirname(__file__), 'data')
 IMAGES_DIR = join(TEST_DATA_DIR, 'train_images')
-PRETRAINED_MODEL_PATH = join(TEST_DATA_DIR, 'models', 'testmodel1.pkl')
+PRETRAINED_MODEL_PATH = join(TEST_DATA_DIR, 'models', 'birdclef-model-1.1.pkl')
 
 
 class Test_train_classifier(unittest.TestCase):
