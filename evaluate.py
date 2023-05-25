@@ -286,13 +286,6 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
         learn = load_learner(model_path[0])
     classes = np.array(learn.dls.vocab)
 
-    nse_val_dir = re.search('nse_\d+.\d+_0.\d+', val_dir_version)
-    if nse_val_dir and 'NSE' not in classes:
-        classes = np.array(list(classes) + ['NSE'])
-        add_nse_column = True
-    else:
-        add_nse_column = False
-
     resize = Resize(InferenceConfig.n_mels)
     config = InferenceConfig.from_dict(audio_dir=audio_dir)
     expected_img_size = (config.n_mels, config.frame_width)
@@ -343,9 +336,6 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
                 preds, _ = learn.get_preds(dl=batch)
                 preds = np.array(preds)
         inference_time += time.time() - t0
-
-        if add_nse_column:
-            preds = np.hstack([preds, np.zeros((1, len(images)))])
 
         assert preds.shape[1] == len(classes), preds[0]
 
