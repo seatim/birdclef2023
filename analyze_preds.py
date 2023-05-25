@@ -285,7 +285,8 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
 
     warnings.filterwarnings(
         action='ignore', category=UserWarning,
-            message='Pandas doesn\'t allow columns to be created via a new')
+        message='Pandas doesn\'t allow columns to be created via a new'
+    )
     add_df_attrs(df)
 
     ap_score, ap_score_b = report_essentials(df, bc23_classes, do_bc23)
