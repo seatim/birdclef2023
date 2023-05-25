@@ -4,6 +4,10 @@ Python package and programs for training classification models for the
 [BirdCLEF 2023](https://www.kaggle.com/competitions/birdclef-2023) coding
 competition.
 
+[![CI](
+https://github.com/seatim/birdclef2023/actions/workflows/adak-ci.yml/badge.svg)](
+https://github.com/seatim/birdclef2023/actions/workflows/adak-ci.yml)
+
 ## Setup
 
 ### Code
