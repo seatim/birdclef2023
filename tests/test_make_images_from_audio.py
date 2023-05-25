@@ -3,6 +3,7 @@ import contextlib
 import io
 import os
 import re
+import shutil
 import tempfile
 import unittest
 
@@ -25,16 +26,8 @@ class Test_make_images_from_audio(MaskWarnings):
     def tearDown(self):
         super().tearDown()
 
-        for dir_ in self.train_dir, self.val_dir:
-            for label in os.listdir(dir_):
-                label_dir = join(dir_, label)
-
-                for name in os.listdir(label_dir):
-                    os.remove(join(label_dir, name))
-
-                os.rmdir(label_dir)
-
-            os.rmdir(dir_)
+        shutil.rmtree(self.train_dir)
+        shutil.rmtree(self.val_dir)
         self.train_dir = self.val_dir = None
 
     def test1(self):

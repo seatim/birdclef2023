@@ -3,6 +3,7 @@ import contextlib
 import io
 import os
 import unittest
+import shutil
 import tempfile
 
 from unittest.mock import patch
@@ -18,10 +19,7 @@ class Test_display_file(unittest.TestCase):
         self.out_dir = tempfile.mkdtemp()
 
     def tearDown(self):
-        for name in os.listdir(self.out_dir):
-            os.remove(join(self.out_dir, name))
-
-        os.rmdir(self.out_dir)
+        shutil.rmtree(self.out_dir)
         self.out_dir = None
 
     def test1(self):
