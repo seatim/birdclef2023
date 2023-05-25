@@ -56,7 +56,7 @@ class Test_display_file(unittest.TestCase):
                          f'XC503001.ogg.phase{n_fft}.png',
                          f'XC503001.ogg.mag{n_fft}.png',
                          f'XC503001.ogg.mel{n_fft}_{n_mels}.png']
-        self.assertEqual(os.listdir(self.out_dir), created_files)
+        self.assertEqual(set(os.listdir(self.out_dir)), set(created_files))
 
     @patch('matplotlib.pyplot.show')
     def test3(self, plt_show):
