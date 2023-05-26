@@ -112,7 +112,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
 
     path = cfg.combined_images_dir
     splitter_cls = RandomSplitter if random_split else StratifiedSplitter
-    splitter = splitter_cls(cfg.valid_pct, cfg.random_seed)
+    splitter = splitter_cls(cfg.valid_fraction, cfg.random_seed)
 
     item_tfms = [Resize(cfg.n_mels)]
     if cfg.add_histeq:

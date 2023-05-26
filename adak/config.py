@@ -9,7 +9,7 @@ class BaseConfig:
     frame_duration = 5.
     frame_hop_factor = 2
     pad_remainder = True
-    valid_pct = 0.2
+    valid_fraction = 0.2
 
     def image_width(self, audio_play_time):
         return 1 + int(audio_play_time * self.sample_rate) // self.hop_length
