@@ -1,9 +1,17 @@
 
+"""Functions for measuring inference performance.
+"""
+
 import numpy as np
 
+from sklearn.metrics import average_precision_score
 from torch import tensor
+from torch.nn.functional import one_hot
 
-from .glue import avg_precision
+
+def avg_precision(y_pred, y_true, n_classes):
+    assert y_pred.shape[1] == n_classes, y_pred.shape
+    return average_precision_score(one_hot(y_true, n_classes), y_pred)
 
 
 def _validate_y_args(y_pred, y_true, classes, n_samples=None):

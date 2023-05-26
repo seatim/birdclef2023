@@ -22,7 +22,8 @@ from fastai.vision.all import (vision_learner, error_rate, ImageDataLoaders,
 from adak.augment import HTrans
 from adak.check import check_images
 from adak.config import TrainConfig
-from adak.glue import avg_precision, StratifiedSplitter
+from adak.evaluate import avg_precision
+from adak.glue import StratifiedSplitter
 from adak.pretrain import make_pretrain_learner
 from adak.sed import SoundEventDetectionFilter
 from adak.transform import add_histeq
