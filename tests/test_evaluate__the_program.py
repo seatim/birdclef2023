@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from os.path import join
+from unittest.mock import patch
 
 import pandas as pd
 
@@ -12,6 +13,7 @@ from evaluate import main as evaluate
 
 from . import run_main
 from .test_train_classifier import IMAGES_DIR, PRETRAINED_MODEL_PATH
+from .test_transform import TEST_AUDIO_PATH
 
 
 class Test_evaluate(unittest.TestCase):
@@ -48,3 +50,24 @@ class Test_evaluate(unittest.TestCase):
         df = pd.read_csv(preds_path, index_col=0)
         self.assertEqual(list(df.columns), ['path', 'helgui', 'subbus1'])
         self.assertEqual(len(df.index), 20)
+
+    @patch('sys.stdin')
+    def test_eval_audio(self, stdin):
+        stdin.__iter__ = lambda self: iter([TEST_AUDIO_PATH])
+        args = [PRETRAINED_MODEL_PATH]
+        output = run_main(evaluate, args)
+        self.assertIn('17 inferences', output)
+
+    @patch('sys.stdin')
+    def test_ensemble_eval_audio(self, stdin):
+        stdin.__iter__ = lambda self: iter([TEST_AUDIO_PATH])
+        args = [PRETRAINED_MODEL_PATH, PRETRAINED_MODEL_PATH]
+        output = run_main(evaluate, args)
+        self.assertIn('17 inferences', output)
+
+    @patch('sys.stdin')
+    def test_efficient_ensemble_eval_audio(self, stdin):
+        stdin.__iter__ = lambda self: iter([TEST_AUDIO_PATH])
+        args = [PRETRAINED_MODEL_PATH, PRETRAINED_MODEL_PATH, '-t', '0.9' ]
+        output = run_main(evaluate, args)
+        self.assertIn('17 inferences', output)

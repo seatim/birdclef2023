@@ -55,6 +55,16 @@ class Test_analyze_preds(MaskWarnings):
         self.assertIn('Lowest confidence classes', output)
         self.assertIn('Statistics of max', output)
 
+    def test_threshold(self):
+        output = run_main(analyze_preds, [PREDS_PATH, '-p', '0.8'])
+        self.assertIn('Examples with max', output)
+        self.assertIn('Top five predictions', output)
+
+    def test_list_nse_candidates(self):
+        output = run_main(analyze_preds, [PREDS_PATH, '-e'])
+        self.assertIn('Examples with lowest sum', output)
+        self.assertIn('Examples with lowest max', output)
+
     def test_make_nse_file(self):
         temp_path = self.temp_path
         output = run_main(analyze_preds, [PREDS_PATH, '-m', '-n', temp_path])
