@@ -46,10 +46,6 @@ def image_from_audio(path, cfg, max_width=None):
     return M
 
 
-def image_width(audio_play_time, sr, hop_length):
-    return 1 + int(audio_play_time * sr) // hop_length
-
-
 def images_from_audio(path, cfg, max_frames=None):
     if max_frames:
         max_width = cfg.frame_width + max_frames * cfg.frame_hop_length
