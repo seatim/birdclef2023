@@ -1,4 +1,7 @@
 
+"""Functions for post-processing inferences.
+"""
+
 import math
 
 import numpy as np

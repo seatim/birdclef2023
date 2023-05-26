@@ -1,4 +1,8 @@
 
+"""Train a classifier to recognize bird species from spectrogram images of
+their recorded calls.
+"""
+
 import os
 import sys
 import warnings
@@ -136,7 +140,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     return dls
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.option('-c', '--check-load-images', is_flag=True)
 @click.option('-b', '--exit-on-error', is_flag=True)
 @click.option('-i', '--bc23-images-dir', default=TrainConfig.bc23_images_dir,

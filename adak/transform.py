@@ -1,4 +1,7 @@
 
+"""Module for turning audio files into images.
+"""
+
 import os
 
 import librosa

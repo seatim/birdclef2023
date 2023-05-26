@@ -1,4 +1,7 @@
 
+"""Functions for data augmentation.
+"""
+
 from functools import partial
 
 from fastai.vision.augment import (_draw_mask, affine_mat, AffineCoordTfm,

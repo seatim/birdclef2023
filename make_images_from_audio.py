@@ -1,4 +1,8 @@
 
+"""Turn a collection of audio files into one or two sets of images: a training
+set and (optionally) a validation set.
+"""
+
 import os
 import re
 import sys
@@ -174,7 +178,7 @@ def make_images(split_name, audio_files, images_dir, cfg, verbose=False):
     print()
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.option('-a', '--audio-dir', default=MakeImagesConfig.audio_dir,
               show_default=True)
 @click.option('-i', '--images-dir', default=MakeImagesConfig.images_dir,

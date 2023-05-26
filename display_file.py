@@ -1,4 +1,7 @@
 
+"""Display waveform and spectrograms for audio files.
+"""
+
 import re
 import sys
 
@@ -100,7 +103,7 @@ def histeq(array, dir_, filename, do_show_hist=False):
     print()
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.argument('path', type=click.Path())
 @click.option('-w', '--show-waveform', is_flag=True)
 @click.option('-n', '--fft-frame-size', 'n_fft', default=BaseConfig.n_fft,

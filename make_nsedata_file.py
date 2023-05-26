@@ -1,4 +1,13 @@
 
+"""Make an NSE file for an image collection **that does not exist on disk**.
+
+This is done by reproducing exactly the images that would be created for a set
+of audio files by make_images_from_audio.py, and using SHA1 hashes to identify
+those images.
+
+NSE files can be used with make_nse_dir.py and train_classifier.py.
+"""
+
 import hashlib
 import os
 import sys
@@ -28,7 +37,7 @@ def image_sha1(img):
     return state.hexdigest()
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.option('-a', '--audio-dir', default=BaseConfig.audio_dir,
               show_default=True)
 @click.option('-o', '--outpath', default='nsedata.csv', show_default=True)

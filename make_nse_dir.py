@@ -1,4 +1,8 @@
 
+"""Relabel a collection of images, introducing an NSE ("no sound event") label
+given a threshold and a file containing a score for all images.
+"""
+
 import os
 import sys
 
@@ -9,7 +13,7 @@ import click
 from adak.sed import SoundEventDetectionFilter
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.argument('source')
 @click.argument('target')
 @click.argument('nse_file')

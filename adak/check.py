@@ -1,4 +1,7 @@
 
+"""Functions for checking image files.
+"""
+
 import os
 import sys
 

@@ -1,4 +1,8 @@
 
+"""Module for classifying audio as "containing a sound event" and manipulating
+the associated labels.
+"""
+
 import math
 import os
 import warnings

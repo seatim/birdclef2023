@@ -1,4 +1,7 @@
 
+"""Configuration parameters for training and inference.
+"""
+
 
 class BaseConfig:
     audio_dir = 'data/birdclef-2023/train_audio'

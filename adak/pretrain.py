@@ -1,4 +1,8 @@
 
+"""Module for making fastai vision Learners from pretrained models, for
+transfer learning.
+"""
+
 import timm
 
 from fastai.data.transforms import get_c

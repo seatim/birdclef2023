@@ -1,4 +1,7 @@
 
+"""Analyze the predictions made by a classifier.
+"""
+
 import os
 import re
 import sys
@@ -249,7 +252,7 @@ def hash_files(df):
     print()
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.argument('path')
 @click.option('-s', '--show-hist', is_flag=True)
 @click.option('-S', '--show-stats', is_flag=True)

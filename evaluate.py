@@ -1,4 +1,9 @@
 
+"""Make classification predictions over a dataset using one or more
+classifiers.  The dataset can be a directory of images (if using the --val-dir
+option) or a list of paths to audio files given on stdin.
+"""
+
 import math
 import os
 import re
@@ -219,7 +224,7 @@ def load_image(path):
     return img
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.argument('model_path', nargs=-1)
 @click.option('-a', '--audio-dir', default=InferenceConfig.audio_dir,
               show_default=True)
