@@ -31,13 +31,19 @@ class Test_train_classifier(unittest.TestCase):
         args = ['-i', IMAGES_DIR, '-B', '', '-D', '', '-e', '1', '-C',
                 '-I', self.combined_dir]
         output = run_main(train_classifier, args)
+        self.assertIn('training on 20 image files', output)
+        self.assertIn('exported model to', output)
 
     def test_pretrained_model(self):
         args = ['-i', IMAGES_DIR, '-B', '', '-D', '', '-e', '1', '-C',
                 '-I', self.combined_dir, '-P', PRETRAINED_MODEL_PATH]
         output = run_main(train_classifier, args)
+        self.assertIn('training on 20 image files', output)
+        self.assertIn('exported model to', output)
 
     def test_nse_file(self):
         args = ['-i', IMAGES_DIR, '-B', '', '-D', '', '-e', '1', '-C',
                 '-I', self.combined_dir, '-N', NSE_FILE_PATH, '-t', '0.3']
         output = run_main(train_classifier, args)
+        self.assertIn('training on 20 image files', output)
+        self.assertIn('exported model to', output)
