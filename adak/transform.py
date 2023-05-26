@@ -19,6 +19,19 @@ class EmptyImage(Exception):
 
 def image_from_audio(path, cfg, max_width=None):
     """Generate mel spectrogram of audio file.
+
+    Args:
+        path (str): path to audio file
+
+        cfg (obj): an `adak.config.BaseConfig`-like object defining the
+            transformation parameters
+
+        max_width (int/None): generate image for a prefix of the audio file,
+            rather than the whole file, so that the result is at most this wide
+
+    Returns:
+        A 2D NumPY array with values in [0..1]
+
     """
     audio, sr = soundfile.read(path)
     assert sr == cfg.sample_rate, (path, sr)
@@ -28,6 +41,9 @@ def image_from_audio(path, cfg, max_width=None):
         return np.zeros((cfg.n_mels, cfg.image_width(len(audio) / sr)))
 
     if max_width is not None:
+        if max_width < 0:
+            raise ValueError('max_width must be positive')
+
         max_samples = (max_width - 1) * cfg.hop_length
         audio = audio[:max_samples]
 

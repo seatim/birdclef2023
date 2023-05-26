@@ -51,6 +51,15 @@ class Test_image_from_audio(MaskWarnings):
         img = image_from_audio(TEST_AUDIO_PATH, self.config)
         expected_img_width = self.config.image_width(TEST_AUDIO_PLAY_TIME)
         self.assertEqual(img.shape, (self.config.n_mels, expected_img_width))
+        self.assertTrue(np.max(img) <= 1)
+        self.assertTrue(np.min(img) >= 0)
+
+    @parameterized.expand((10, 11, 99, 100, 999, 1000))
+    def test_max_width(self, max_width):
+        img = image_from_audio(TEST_AUDIO_PATH, self.config, max_width)
+        self.assertEqual(img.shape, (self.config.n_mels, max_width))
+        self.assertTrue(np.max(img) <= 1)
+        self.assertTrue(np.min(img) >= 0)
 
 
 class Test_images_from_audio(MaskWarnings):
