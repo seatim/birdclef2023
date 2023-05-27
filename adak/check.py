@@ -14,6 +14,18 @@ from PIL import Image, UnidentifiedImageError
 
 
 def check_image(cfg, path):
+    """Check that an image file can be used for training.
+
+    Args:
+        cfg (obj): an `adak.config.TrainConfig`-like object defining the
+            training parameters
+
+        path (str): path to image file
+
+    Returns:
+        A string describing an error, or None
+
+    """
     try:
         img = Image.open(path)
     except UnidentifiedImageError as e:
@@ -34,6 +46,19 @@ def check_image(cfg, path):
 
 
 def check_images(cfg, exit_on_error):
+    """Check combined images directory for errors.
+
+    Args:
+        cfg (obj): an `adak.config.TrainConfig`-like object defining the
+            training parameters
+
+        exit_on_error (bool): If True, exit when an error is encountered,
+            otherwise print a warning
+
+    Returns:
+        A set of training class labels
+
+    """
     combined_images_dir = cfg.combined_images_dir
     class_counts = defaultdict(int)
     classes_present = set(name for name in os.listdir(combined_images_dir)
