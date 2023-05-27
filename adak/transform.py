@@ -18,7 +18,7 @@ class EmptyImage(Exception):
 
 
 def image_from_audio(path, cfg, max_width=None):
-    """Generate mel spectrogram of audio file.
+    """Generate single mel spectrogram (wide image) of audio file.
 
     Args:
         path (str): path to audio file
@@ -63,6 +63,21 @@ def image_from_audio(path, cfg, max_width=None):
 
 
 def images_from_audio(path, cfg, max_frames=None):
+    """Generate sequence of mel spectrograms of audio file, corresponding to
+    successive, possibly overlapping intervals of play time.
+
+    Args:
+        path (str): path to audio file
+
+        cfg (obj): an `adak.config.BaseConfig`-like object defining the
+            transformation parameters
+
+        max_frames (int/None): maximum number of images to return
+
+    Returns:
+        List of 2D NumPY arrays with values in [0..1]
+
+    """
     if max_frames:
         max_width = cfg.frame_width + max_frames * cfg.frame_hop_length
     else:
@@ -109,6 +124,16 @@ def images_from_audio(path, cfg, max_frames=None):
 
 
 def center_median(x):
+    """Histogram equalization method that works by mapping values linearly so
+    that the median of ``x`` is mapped to 0.5.
+
+    Args:
+        x (array): a NumPy array with values in [0..1]
+
+    Returns:
+        A NumPy array of same shape as input, with values in [0..1]
+
+    """
     if not (0 <= np.min(x) <= 1):
         raise ValueError('min value of input must be between 0 and 1')
     if not (0 <= np.max(x) <= 1):
@@ -119,6 +144,18 @@ def center_median(x):
 
 
 def clip_tails(x, n_std=3):
+    """Histogram equalization method that works by clipping values that are
+    more than ``n_std`` standard deviations from the mean, and then scaling the
+    result to the range [0..1].
+
+    Args:
+        x (array): a NumPy array with values in [0..1]
+        n_std (float): number of standard deviations
+
+    Returns:
+        A NumPy array of same shape as input, with values in [0..1]
+
+    """
     if not (0 <= np.min(x) <= 1):
         raise ValueError('min value of input must be between 0 and 1')
     if not (0 <= np.max(x) <= 1):
