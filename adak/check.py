@@ -13,9 +13,9 @@ import numpy as np
 from PIL import Image, UnidentifiedImageError
 
 
-def check_image(cfg, image_path):
+def check_image(cfg, path):
     try:
-        img = Image.open(image_path)
+        img = Image.open(path)
     except UnidentifiedImageError as e:
         return e.args[0]
 
@@ -23,14 +23,14 @@ def check_image(cfg, image_path):
         img.verify()
     except OSError as e:
         if e.args[0] == 'Truncated File Read':
-            return f'{e.args[0]}: {image_path}'
+            return f'{e.args[0]}: {path}'
         else:
             raise
     finally:
         img.close()
 
     if img.size[1] != cfg.n_mels:
-        return f'image height != {cfg.n_mels}: {image_path}'
+        return f'image height != {cfg.n_mels}: {path}'
 
 
 def check_images(cfg, exit_on_error):
