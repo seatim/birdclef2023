@@ -9,9 +9,11 @@ from os.path import dirname, join
 import numpy as np
 
 from parameterized import parameterized
+from scipy.stats import spearmanr
 
 from adak.config import BaseConfig
-from adak.transform import image_from_audio, images_from_audio
+from adak.transform import (image_from_audio, images_from_audio, center_median,
+                            clip_tails)
 
 AUDIO_DIR = join(dirname(__file__), 'data', 'train_audio')
 TEST_AUDIO_PATH = join(AUDIO_DIR, 'helgui', 'XC503001.ogg')
@@ -83,3 +85,36 @@ class Test_images_from_audio(MaskWarnings):
         imgs = np.array(images_from_audio(
             TEST_AUDIO_PATH, self.config, max_frames))
         self.assertEqual(len(imgs), max_frames)
+
+
+class Test_center_median(unittest.TestCase):
+    @parameterized.expand(((0.3, 0.2), (0.6, 0.3), (0.8, 0.1)))
+    def test1(self, mean, std):
+        xs = np.random.normal(mean, std, 100)
+        xs[xs < 0] = 0
+        xs[xs > 1] = 1
+
+        ys = center_median(xs)
+
+        n_changed = len(list(filter(None, xs != ys)))
+        self.assertGreater(n_changed, 75)
+        self.assertLessEqual(np.max(ys), 1)
+        self.assertGreaterEqual(np.min(ys), 0)
+        self.assertTrue(math.isclose(spearmanr(xs, ys).statistic, 1))
+
+
+class Test_clip_tails(unittest.TestCase):
+    @parameterized.expand(((0.3, 0.2), (0.6, 0.3), (0.8, 0.1)))
+    def test1(self, mean, std):
+        xs = np.random.normal(mean, std, 1000)
+        xs[xs < 0] = 0
+        xs[xs > 1] = 1
+
+        ys = clip_tails(xs, 2)
+
+        n_changed = len(list(filter(None, xs != ys)))
+        self.assertGreater(n_changed, 750)
+        self.assertLessEqual(np.max(ys), 1)
+        self.assertGreaterEqual(np.min(ys), 0)
+        self.assertTrue(
+            math.isclose(spearmanr(xs, ys).statistic, 1, abs_tol=1e-4))
