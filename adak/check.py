@@ -13,37 +13,27 @@ import numpy as np
 from PIL import Image, UnidentifiedImageError
 
 
-def get_image_info(path):
-    f = Image.open(path)
-    f.close()
-    return f
-
-
-def get_image_data(path):
-    f = Image.open(path)
-    data = list(f.getdata())
-    f.close()
-    return data
-
-
-def check_image(cfg, image_path, check_load_image):
+def check_image(cfg, image_path):
     try:
-        img_shape = get_image_info(image_path).size
+        img = Image.open(image_path)
     except UnidentifiedImageError as e:
         return e.args[0]
 
-    if check_load_image:
-        try:
-            expected_image_len = img_shape[0] * img_shape[1]
-            assert len(get_image_data(image_path)) == expected_image_len
-        except OSError as e:
+    try:
+        img.verify()
+    except OSError as e:
+        if e.args[0] == 'Truncated File Read':
             return f'{e.args[0]}: {image_path}'
+        else:
+            raise
+    finally:
+        img.close()
 
-    if img_shape[1] != cfg.n_mels:
+    if img.size[1] != cfg.n_mels:
         return f'image height != {cfg.n_mels}: {image_path}'
 
 
-def check_images(cfg, check_load_images, exit_on_error):
+def check_images(cfg, exit_on_error):
     combined_images_dir = cfg.combined_images_dir
     class_counts = defaultdict(int)
     classes_present = set(name for name in os.listdir(combined_images_dir)
@@ -57,7 +47,7 @@ def check_images(cfg, check_load_images, exit_on_error):
 
         for name in os.listdir(join(combined_images_dir, label)):
             img_path = join(combined_images_dir, label, name)
-            error = check_image(cfg, img_path, check_load_images)
+            error = check_image(cfg, img_path)
             if error:
                 if exit_on_error:
                     sys.exit(f'E: {error}')

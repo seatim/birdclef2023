@@ -141,7 +141,6 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
 
 
 @click.command(help=__doc__)
-@click.option('-c', '--check-load-images', is_flag=True)
 @click.option('-b', '--exit-on-error', is_flag=True)
 @click.option('-i', '--bc23-images-dir', default=TrainConfig.bc23_images_dir,
               show_default=True)
@@ -159,7 +158,7 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
 @click.option('-P', '--pretrained-model')
 @click.option('-N', '--nse-file')
 @click.option('-t', '--nse-threshold', default=0.1, show_default=True)
-def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
+def main(exit_on_error, bc23_images_dir, bc21_images_dir,
          bc22_images_dir, combined_images_dir, epochs, cpu, random_split,
          prune_missing_classes, show_batch, pretrained_model, nse_file,
          nse_threshold):
@@ -199,7 +198,7 @@ def main(check_load_images, exit_on_error, bc23_images_dir, bc21_images_dir,
     if nse_file:
         setup_nsed(classes, config, nse_file, nse_threshold)
 
-    classes_present = check_images(config, check_load_images, exit_on_error)
+    classes_present = check_images(config, exit_on_error)
     handle_missing_classes(classes, classes_present, prune_missing_classes)
 
     dls = get_data_loader(classes, config, random_split, show_batch)
