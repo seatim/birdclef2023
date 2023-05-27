@@ -11,6 +11,19 @@ from torch import stack, zeros_like as t0, ones_like as t1
 
 def htrans_mat(x, p, max_trans):
     """Return a random horizontal translation matrix
+
+    Args:
+        x (tensor): an image stack: a tensor of shape (N, C, H, W) where N is
+            number of images, C is number of channels, and H and W are height
+            and width.
+
+        p (float): probability of returning a non-identity matrix
+
+        max_trans (float): maximum translation in normalized units
+
+    Returns:
+        A tensor of shape (N, 3, 3)
+
     """
     if not (0 <= p <= 1):
         raise ValueError('p must be >= 0 and <= 1')
@@ -26,6 +39,8 @@ def htrans_mat(x, p, max_trans):
 
 
 class HTrans(AffineCoordTfm):
+    """Horizontal translation transform
+    """
     def __init__(self,
         max_trans=0.5,  # Maximum magnitude of translation
         p=0.75,  # Probability of applying translation
