@@ -173,6 +173,17 @@ def clip_tails(x, n_std=3):
 
 
 def add_histeq(img):
+    """Return the average of ``img`` and histogram-equalized variants of
+    ``img``.
+
+    Args:
+        img (obj): a `fastai.vision.core.PILImageBW` object, a 2D NumPY of
+            uint8s, or a `fastai.torch_core.TensorCategory` object.  In the
+            latter case, return ``img`` unmodified.
+
+    Returns:
+        A `PIL.Image` object or a `fastai.torch_core.TensorCategory` object
+    """
     if type(img) is not PILImageBW:
         if type(img) is TensorCategory:
             return img

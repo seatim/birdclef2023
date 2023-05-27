@@ -13,7 +13,7 @@ from scipy.stats import spearmanr
 
 from adak.config import BaseConfig
 from adak.transform import (image_from_audio, images_from_audio, center_median,
-                            clip_tails)
+                            clip_tails, add_histeq)
 
 AUDIO_DIR = join(dirname(__file__), 'data', 'train_audio')
 TEST_AUDIO_PATH = join(AUDIO_DIR, 'helgui', 'XC503001.ogg')
@@ -118,3 +118,19 @@ class Test_clip_tails(unittest.TestCase):
         self.assertGreaterEqual(np.min(ys), 0)
         self.assertTrue(
             math.isclose(spearmanr(xs, ys).statistic, 1, abs_tol=1e-4))
+
+
+class Test_add_histeq(unittest.TestCase):
+    def test1(self):
+        a = np.random.normal(size=(100, 100)) * 50 + 50
+        a[a < 0] = 0
+        a = a.astype('uint8')
+
+        b = add_histeq(a)
+
+        n_changed = len(list(filter(None, (a != b).flatten())))
+        self.assertGreater(n_changed, 7500)
+
+        x, y = a.flatten(), np.array(b).flatten()
+        self.assertTrue(
+            math.isclose(spearmanr(x, y).statistic, 1, abs_tol=1e-6))
