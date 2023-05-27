@@ -188,7 +188,7 @@ def main(exit_on_error, bc23_images_dir, bc21_images_dir,
         tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
         classes |= set(tmd22.primary_label)
 
-    config = TrainConfig.from_dict(
+    config = TrainConfig.instance(
         bc23_images_dir=bc23_images_dir,
         bc21_images_dir=bc21_images_dir, bc22_images_dir=bc22_images_dir,
         combined_images_dir=combined_images_dir)

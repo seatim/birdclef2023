@@ -195,7 +195,7 @@ def main(path, show_waveform, n_fft, n_mels, limit_audio_length,
     if save_histeq_spectrograms:
         histeq(mel, output_dir, f'{basename(path)}.mel{n_fft}_{n_mels}.png')
 
-    config = BaseConfig.from_dict(
+    config = BaseConfig.instance(
         n_mels=n_mels, n_fft=n_fft, hop_length=n_fft // HOP_FACTOR,
         sample_rate=sr)
 

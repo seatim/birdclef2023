@@ -24,14 +24,14 @@ class Test_check_image(unittest.TestCase):
         self.assertIn('cannot identify', check_image(TrainConfig, img_path))
 
     def test_bad_shape(self):
-        config = TrainConfig.from_dict(n_mels=100)
+        config = TrainConfig.instance(n_mels=100)
         self.assertIn('image height !=', check_image(config, GOOD_IMAGE))
 
 
 class Test_check_images(unittest.TestCase):
     @patch('builtins.print')
     def test1(self, print):
-        config = TrainConfig.from_dict(combined_images_dir=IMAGES_DIR)
+        config = TrainConfig.instance(combined_images_dir=IMAGES_DIR)
         classes = check_images(config, True)
         self.assertEqual(classes, {'helgui', 'subbus1'})
         self.assertEqual(print.call_count, 5)

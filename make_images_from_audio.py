@@ -197,7 +197,7 @@ def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
     if 'train' not in basename(normpath(images_dir)):
         sys.exit(f'E: images_dir must have "train" in its name.')
 
-    config = MakeImagesConfig.from_dict(
+    config = MakeImagesConfig.instance(
         audio_dir=audio_dir, images_dir=images_dir,
         max_images_per_file=max_images_per_file,
         max_paths_per_class=max_paths_per_class)

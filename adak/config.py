@@ -26,7 +26,7 @@ class BaseConfig:
         return self.frame_width // self.frame_hop_factor
 
     @classmethod
-    def from_dict(cls, **kwargs):
+    def instance(cls, **kwargs):
         instance = cls()
         instance.__dict__.update(**kwargs)
         return instance

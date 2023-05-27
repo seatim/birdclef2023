@@ -292,7 +292,7 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
     classes = np.array(learn.dls.vocab)
 
     resize = Resize(InferenceConfig.n_mels)
-    config = InferenceConfig.from_dict(audio_dir=audio_dir)
+    config = InferenceConfig.instance(audio_dir=audio_dir)
     expected_img_size = (config.n_mels, config.frame_width)
 
     n_inferences = n_top1 = n_top5 = 0
