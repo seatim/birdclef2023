@@ -13,10 +13,7 @@ class StratifiedSplitter:
         self.random_state = random_state
         self.print_stats = print_stats
 
-    def __call__(self, items, **kwargs):
-        if kwargs:
-            print('W: StratifiedSplitter: unknown kwargs:', kwargs)
-
+    def __call__(self, items):
         labels = np.array([parent_label(item) for item in items])
         train, valid = train_test_split(
             list(range(len(items))), test_size=self.test_size,
