@@ -109,15 +109,21 @@ def images_from_audio(path, cfg, max_frames=None):
 
 
 def center_median(x):
-    assert 0 <= np.min(x) <= 1, np.min(x)
-    assert 0 <= np.max(x) <= 1, np.max(x)
+    if not (0 <= np.min(x) <= 1):
+        raise ValueError('min value of input must be between 0 and 1')
+    if not (0 <= np.max(x) <= 1):
+        raise ValueError('max value of input must be between 0 and 1')
+
     median = np.median(x)
     return np.where(x < median, x*(0.5/median), 0.5+(x-median)*(0.5/(1-median)))
 
 
 def clip_tails(x, n_std=3):
-    assert 0 <= np.min(x) <= 1, np.min(x)
-    assert 0 <= np.max(x) <= 1, np.max(x)
+    if not (0 <= np.min(x) <= 1):
+        raise ValueError('min value of input must be between 0 and 1')
+    if not (0 <= np.max(x) <= 1):
+        raise ValueError('max value of input must be between 0 and 1')
+
     median = np.median(x)
     std = np.std(x)
     lo = median - n_std*std
