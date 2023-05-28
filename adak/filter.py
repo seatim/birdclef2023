@@ -7,8 +7,9 @@ import math
 import numpy as np
 
 
-def do_filter_top_k(preds, k, assert_input_is_normalized=False):
-    def filter_top_k(pred):
+def top_k_filter(preds, k, assert_input_is_normalized=False):
+
+    def top_k_filter(pred):
         if assert_input_is_normalized:
             assert math.isclose(sum(pred), 1, rel_tol=1e-5), sum(pred)
 
@@ -23,14 +24,14 @@ def do_filter_top_k(preds, k, assert_input_is_normalized=False):
         assert math.isclose(sum(new_pred), 1, rel_tol=1e-6), sum(new_pred)
         return new_pred
 
-    return np.stack([filter_top_k(pred) for pred in np.array(preds)])
+    return np.stack([top_k_filter(pred) for pred in np.array(preds)])
 
 
-def fine_threshold(preds, threshold, assert_input_is_normalized=False):
+def fine_filter(preds, threshold, assert_input_is_normalized=False):
     if not (0 < threshold < 1):
         raise ValueError('threshold must be between zero and one')
 
-    def fine_threshold(pred):
+    def fine_filter(pred):
         if assert_input_is_normalized:
             assert math.isclose(sum(pred), 1, rel_tol=1e-5), sum(pred)
 
@@ -40,7 +41,7 @@ def fine_threshold(preds, threshold, assert_input_is_normalized=False):
             assert math.isclose(sum(new_pred), 1, rel_tol=1e-6), sum(new_pred)
         return new_pred
 
-    return np.stack([fine_threshold(pred) for pred in np.array(preds)])
+    return np.stack([fine_filter(pred) for pred in np.array(preds)])
 
 
 def max_filter(preds, threshold):

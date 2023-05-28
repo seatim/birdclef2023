@@ -21,7 +21,7 @@ from tabulate import tabulate
 
 from adak.evaluate import (avg_precision_over_subset, count_top_n,
                            slice_by_class_subset)
-from adak.filter import do_filter_top_k, fine_threshold, max_filter
+from adak.filter import top_k_filter, fine_filter, max_filter
 from adak.hashfile import file_sha1
 
 
@@ -144,12 +144,12 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
 
     ks = (98, 137, 201, 233, 249, 257, 261, 263, 264)
     sweep_preds_AP_score(
-        y_pred, ap_score, ks, 'k', do_filter_top_k, 'top-k filter',
+        y_pred, ap_score, ks, 'k', top_k_filter, 'top-k filter',
         best_ap_score, verbose)
 
     ftps = list(reversed((1e-7, 1e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3)))
     sweep_preds_AP_score(
-        y_pred, ap_score, ftps, 'p', fine_threshold, 'fine threshold',
+        y_pred, ap_score, ftps, 'p', fine_filter, 'fine filter',
         best_ap_score, verbose)
 
     mfps = list(reversed([0.01 * x for x in range(1, 11)]))
@@ -167,12 +167,12 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
                 set(bc23_classes) - set(missing_classes))
 
         sweep_preds_AP_score(
-            y_pred_b, ap_score_b, ks, 'k', do_filter_top_k,
+            y_pred_b, ap_score_b, ks, 'k', top_k_filter,
             'top-k filter over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
-            y_pred_b, ap_score_b, ftps, 'p', fine_threshold,
-            'fine threshold over bc23 classes', best_ap_score_b, verbose)
+            y_pred_b, ap_score_b, ftps, 'p', fine_filter,
+            'fine filter over bc23 classes', best_ap_score_b, verbose)
 
         sweep_preds_AP_score(
             y_pred_b, ap_score_b, mfps, 'p', max_filter,
