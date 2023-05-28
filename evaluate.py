@@ -24,7 +24,7 @@ from torch import tensor
 
 from adak.augment import HTrans, htrans_mat  # needed by some learners
 from adak.config import InferenceConfig
-from adak.evaluate import avg_precision_over_subset, calculate_n_top_n
+from adak.evaluate import avg_precision_over_subset, count_top_n
 from adak.transform import images_from_audio
 from adak.transform import add_histeq
 
@@ -372,8 +372,8 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
     y_pred = np.vstack(y_pred)
     y_true = np.hstack(y_true)
 
-    assert n_top1 == calculate_n_top_n(y_pred, y_true, classes, 1)
-    assert n_top5 == calculate_n_top_n(y_pred, y_true, classes, 5)
+    assert n_top1 == count_top_n(y_pred, y_true, classes, 1)
+    assert n_top5 == count_top_n(y_pred, y_true, classes, 5)
 
     def ap_score(y_pred):
         return avg_precision_over_subset(

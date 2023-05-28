@@ -19,7 +19,7 @@ import pandas as pd
 from fastai.data.all import parent_label
 from tabulate import tabulate
 
-from adak.evaluate import (avg_precision_over_subset, calculate_n_top_n,
+from adak.evaluate import (avg_precision_over_subset, count_top_n,
                            slice_by_class_subset)
 from adak.filter import do_filter_top_k, fine_threshold, max_filter
 from adak.hashfile import file_sha1
@@ -65,8 +65,8 @@ def report_essentials(df, bc23_classes, do_bc23):
         print(f'W: missing examples for {len(missing_classes)} classes.')
         print(f'W: first five are:', missing_classes[:5])
 
-    n_top1 = calculate_n_top_n(y_pred, y_true, classes, 1)
-    n_top5 = calculate_n_top_n(y_pred, y_true, classes, 5)
+    n_top1 = count_top_n(y_pred, y_true, classes, 1)
+    n_top5 = count_top_n(y_pred, y_true, classes, 5)
     ap_score = avg_precision_over_subset(
         y_pred, y_true, classes, set(classes) - set(missing_classes))
     ap_score_b = None
@@ -89,8 +89,8 @@ def report_essentials(df, bc23_classes, do_bc23):
         y_pred_b, y_true_b = slice_by_class_subset(
             y_pred, y_true, classes, bc23_classes)
 
-        n_top1_b = calculate_n_top_n(y_pred_b, y_true_b, bc23_classes, 1)
-        n_top5_b = calculate_n_top_n(y_pred_b, y_true_b, bc23_classes, 5)
+        n_top1_b = count_top_n(y_pred_b, y_true_b, bc23_classes, 1)
+        n_top5_b = count_top_n(y_pred_b, y_true_b, bc23_classes, 5)
 
         ap_score_b = avg_precision_over_subset(
             y_pred, y_true, classes, set(bc23_classes) - set(missing_classes))

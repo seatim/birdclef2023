@@ -140,7 +140,7 @@ def avg_precision_over_subset(y_pred, y_true, classes, subset):
     return avg_precision(y_pred, tensor(y_true), len(subset))
 
 
-def calculate_n_top_n(y_pred, y_true, classes, n):
+def count_top_n(y_pred, y_true, classes, n):
     """Count the number of predictions in ``y_pred`` for which the true class
     received one of the N highest scores.
 
