@@ -10,6 +10,31 @@ from torch.nn.functional import one_hot
 
 
 def avg_precision(y_pred, y_true, n_classes):
+    """Adapter for `sklearn.metrics.average_precision_score` that works for
+    multi-class classification.
+
+    Args:
+        y_pred (tensor): a tensor of shape (N, M) where N is number of examples
+            and M is number of classes, and values are floats in the range
+            [0..1]
+
+        y_true (tensor): a tensor of shape (N,) with int values
+
+        n_classes (int): number of classes
+
+    Returns:
+        average precision score (float)
+
+    """
+    if len(y_pred.shape) != 2:
+        raise ValueError('y_pred must be a rank-2 tensor')
+    if len(y_true.shape) != 1:
+        raise ValueError('y_true must be a rank-1 tensor')
+    if not (0 <= y_pred.min() <= y_pred.max() <= 1):
+        raise ValueError('y_pred values must be between 0 and 1')
+    if not (0 <= min(y_true) <= max(y_true) < n_classes):
+        raise ValueError('y_true values must be between 0 and n_classes')
+
     assert y_pred.shape[1] == n_classes, y_pred.shape
     return average_precision_score(one_hot(y_true, n_classes), y_pred)
 
