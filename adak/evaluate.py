@@ -40,6 +40,24 @@ def avg_precision(y_pred, y_true, n_classes):
 
 
 def _validate_y_args(y_pred, y_true, classes, n_samples=None):
+    """Check the validity of ``y_pred`` and ``y_true``.
+
+    Args:
+        y_pred (tensor/array): a tensor or NumPY array of shape (N, M) where N
+            is number of examples and M is number of classes, and values are
+            floats in the range [0..1]
+
+        y_true (tensor/array): a tensor or NumPY array of shape (N,) with int
+            values
+
+        classes (sequence)
+
+        n_samples (int/None): number of samples
+
+    Returns:
+        number of samples
+
+    """
     assert len(y_pred.shape) == 2, y_pred.shape
     assert len(y_true.shape) == 1, y_true.shape
 
@@ -56,6 +74,30 @@ def _validate_y_args(y_pred, y_true, classes, n_samples=None):
 
 
 def slice_by_class_subset(y_pred, y_true, classes, subset):
+    """Return matched slices of ``y_pred`` and ``y_true``.
+
+    Args:
+        y_pred (tensor/array): a tensor or NumPY array of shape (N, M) where N
+            is number of examples and M is number of classes, and values are
+            floats in the range [0..1]
+
+        y_true (tensor/array): a tensor or NumPY array of shape (N,) with int
+            values
+
+        classes (sequence)
+
+        subset (iterable): iterable whose elements are in ``classes``
+
+    Returns:
+        A 2-tuple comprising:
+
+            - a NumPY array of shape (N, S) whose columns are columns of
+              ``y_pred``, where S is the length of ``subset``
+
+            - a NumPY array of shape (N,) whose values are mapped from
+              ``y_true`` to correspond to ``subset``
+
+    """
     unknown_classes = set(subset) - set(classes)
     assert unknown_classes == set(), unknown_classes
     assert hasattr(classes, '__getitem__'), 'classes must be ordered'
@@ -76,11 +118,48 @@ def slice_by_class_subset(y_pred, y_true, classes, subset):
 
 
 def avg_precision_over_subset(y_pred, y_true, classes, subset):
+    """Calculate average precision score of slice of ``y_pred``.
+
+    Args:
+        y_pred (tensor/array): a tensor or NumPY array of shape (N, M) where N
+            is number of examples and M is number of classes, and values are
+            floats in the range [0..1]
+
+        y_true (tensor/array): a tensor or NumPY array of shape (N,) with int
+            values
+
+        classes (sequence)
+
+        subset (iterable): iterable whose elements are in ``classes``
+
+    Returns:
+        average precision score (float)
+
+    """
     y_pred, y_true = slice_by_class_subset(y_pred, y_true, classes, subset)
     return avg_precision(y_pred, tensor(y_true), len(subset))
 
 
 def calculate_n_top_n(y_pred, y_true, classes, n):
+    """Count the number of predictions in ``y_pred`` for which the true class
+    received one of the N highest scores.
+
+    Args:
+        y_pred (tensor/array): a tensor or NumPY array of shape (L, M) where L
+            is number of examples and M is number of classes, and values are
+            floats in the range [0..1]
+
+        y_true (tensor/array): a tensor or NumPY array of shape (L,) with int
+            values
+
+        classes (sequence)
+
+        n (int): the N in "N highest"
+
+    Returns:
+        number of top-N predictions (int)
+
+    """
     n_samples = _validate_y_args(y_pred, y_true, classes)
 
     top_n = [pred.argsort()[-n:] for pred in y_pred]
