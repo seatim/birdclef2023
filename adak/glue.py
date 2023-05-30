@@ -8,6 +8,11 @@ from .evaluate import avg_precision  # part of this module's API now
 
 
 class StratifiedSplitter:
+    """Stratified splitter that obtains labels using the given ``get_y``
+    function, which defaults to `fastai.data.transforms.parent_label`.  This is
+    an ease-of-use improvement over `fastai.data.transforms.TrainTestSplitter`
+    which requires labels to be known in advance.
+    """
     def __init__(self, test_size, random_state, get_y=None, print_stats=True):
         self.test_size = test_size
         self.random_state = random_state
