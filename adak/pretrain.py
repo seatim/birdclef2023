@@ -12,7 +12,7 @@ from fastai.vision.learner import add_head, TimmBody, _timm_norm, default_split
 from fastcore.basics import store_attr
 
 
-def get_model_config(arch, n_in=3):
+def _get_model_config(arch, n_in=3):
     model = timm.create_model(
         arch, pretrained=True, num_classes=0, in_chans=n_in)
     return model.default_cfg
@@ -38,7 +38,7 @@ def make_pretrain_learner(pre_learn, dls, metrics, normalize=True,
         body, body.model.num_features, n_out, pool=body.needs_pool)
 
     if normalize:
-        cfg = get_model_config(pre_learn.arch)
+        cfg = _get_model_config(pre_learn.arch)
         _timm_norm(dls, cfg, True)
 
     splitter = default_split
