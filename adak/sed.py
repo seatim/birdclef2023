@@ -11,7 +11,7 @@ from collections import defaultdict
 from functools import reduce
 from io import BytesIO
 from itertools import chain, combinations
-from operator import ior
+from operator import or_
 
 from os.path import basename, exists, join
 
@@ -39,7 +39,7 @@ class SoundEventDetectionFilter:
         self.paths = list(paths)
         self.dfs = [pd.read_csv(p) for p in self.paths]
         self.threshold = threshold
-        self.all_sha1s = set(reduce(ior, [set(df.sha1) for df in self.dfs]))
+        self.all_sha1s = set(reduce(or_, [set(df.sha1) for df in self.dfs]))
 
         for p, df in zip(paths, self.dfs):
             assert set(df.columns) == self.COLUMNS, (p, df.columns)
