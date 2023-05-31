@@ -28,11 +28,28 @@ VAD = webrtcvad.Vad(0)
 
 
 def set_intersections(sets, digits=6):
+    """Return the fraction of intersection of elements of each pair in the
+    power set of ``sets``.
+
+    Args:
+        sets (iterable): sequence of sets
+
+    Returns:
+        list of floats
+
+    """
     return [round(len(a & b) / len(a | b), digits)
             for a, b in combinations(sets, 2)]
 
 
 class SoundEventDetectionFilter:
+    """Identify and relabel examples as "Not containing a Sound Event" ("NSE").
+    This is done by exact matching of image files to precomputed scores and
+    comparison of scores to a threshold.  Matching is done by SHA1 hashes.
+    Scores are given as CSV files which can be created by make_nsedata_file.py
+    and by analyze_preds.py (using the --nse-file-path option).
+
+    """
     COLUMNS = {'path', 'max_bc23', 'sha1'}
 
     def __init__(self, *paths, threshold=None):
@@ -159,6 +176,16 @@ class SoundEventDetectionFilter:
 
 def sound_event_proba(audio, config):
     """Return sound event probabilities for audio file.
+
+    Args:
+        audio (array): 1D array of floats
+
+        config (obj): an `adak.config.BaseConfig`-like object defining the
+            transformation parameters
+
+    Returns:
+        list of floats
+
     """
     if type(audio) is not np.ndarray:
         raise ValueError('input must be 1D numpy array of floats')
