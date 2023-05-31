@@ -46,8 +46,9 @@ class SoundEventDetectionFilter:
     """Identify and relabel examples as "Not containing a Sound Event" ("NSE").
     This is done by exact matching of image files to precomputed scores and
     comparison of scores to a threshold.  Matching is done by SHA1 hashes.
-    Scores are given as CSV files which can be created by make_nsedata_file.py
-    and by analyze_preds.py (using the --nse-file-path option).
+    Scores are given as CSV files.  Score files can be created by
+    make_nsedata_file.py and by analyze_preds.py (using the --nse-file-path
+    option).
 
     """
     COLUMNS = {'path', 'max_bc23', 'sha1'}
