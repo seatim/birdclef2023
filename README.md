@@ -1,3 +1,6 @@
+
+![Spectogram image](tests/data/train_images/helgui/XC503001.ogg-2-5.png)
+
 # birdclef2023
 
 Python package and programs for training classification models for the
