@@ -1,5 +1,7 @@
 
-![Spectogram image](tests/data/train_images/helgui/XC503001.ogg-2-5.png)
+<p align="center">
+    <img alt="Spectogram image" src="https://raw.githubusercontent.com/seatim/birdclef2023/main/tests/data/train_images/helgui/XC503001.ogg-2-5.png"/>
+</p>
 
 # birdclef2023
 
