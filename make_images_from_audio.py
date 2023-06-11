@@ -5,11 +5,12 @@ set and (optionally) a validation set.
 
 import os
 import re
+import shutil
 import sys
 
 from collections import defaultdict
 from itertools import chain
-from os.path import basename, exists, join, normpath
+from os.path import basename, dirname, exists, join, normpath
 from pathlib import Path
 
 import click
@@ -191,6 +192,10 @@ def make_images(split_name, audio_files, images_dir, cfg, verbose=False):
 def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
          force_overwrite, no_split, verbose):
 
+    tmd_path = join(dirname(normpath(audio_dir)), 'train_metadata.csv')
+    if not exists(tmd_path):
+        sys.exit(f'E: missing metadata file.  Expected it at {tmd_path}.')
+
     if exists(images_dir) and not force_overwrite:
         sys.exit(f'E: {images_dir} exists.  Use "-f" to overwrite it.')
 
@@ -216,6 +221,7 @@ def main(audio_dir, images_dir, max_images_per_file, max_paths_per_class,
         make_images('train', train, images_dir, config, verbose)
         make_images('val', val, re.sub('train', 'val', images_dir), config,
                     verbose)
+    shutil.copyfile(tmd_path, join(images_dir, 'train_metadata.csv'))
 
 
 if __name__ == '__main__':
