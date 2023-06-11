@@ -42,11 +42,11 @@ class HTrans(AffineCoordTfm):
     """Horizontal translation transform
     """
     def __init__(self,
-        max_trans=0.5,  # Maximum magnitude of translation
-        p=0.75,  # Probability of applying translation
-        mode='bilinear',  # PyTorch `F.grid_sample` interpolation
-        align_corners=True,  # PyTorch `F.grid_sample` align_corners
-    ):
+                 max_trans=0.5,  # Maximum magnitude of translation
+                 p=0.75,  # Probability of applying translation
+                 mode='bilinear',  # PyTorch `F.grid_sample` interpolation
+                 align_corners=True,  # PyTorch `F.grid_sample` align_corners
+                 ):
         aff_fs = partial(htrans_mat, p=p, max_trans=max_trans)
         super().__init__(aff_fs, size=None, mode=mode, pad_mode=PadMode.Zeros,
                          align_corners=align_corners, p=p)

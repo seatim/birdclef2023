@@ -68,6 +68,6 @@ class Test_evaluate(unittest.TestCase):
     @patch('sys.stdin')
     def test_efficient_ensemble_eval_audio(self, stdin):
         stdin.__iter__ = lambda self: iter([TEST_AUDIO_PATH])
-        args = [PRETRAINED_MODEL_PATH, PRETRAINED_MODEL_PATH, '-t', '0.9' ]
+        args = [PRETRAINED_MODEL_PATH, PRETRAINED_MODEL_PATH, '-t', '0.9']
         output = run_main(evaluate, args)
         self.assertIn('17 inferences', output)

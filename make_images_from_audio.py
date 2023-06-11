@@ -150,7 +150,7 @@ def make_images_for_class(label, paths, images_dir, config, verbose=False):
             save_image(images[k], img_path)
 
     if verbose:
-        print(f'I: created {len(sample_addresses)} images for class {label}   ')
+        print(f'I: created {len(sample_addresses)} images for class {label}  ')
     return len(sample_addresses)
 
 

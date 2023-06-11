@@ -214,7 +214,7 @@ def sound_event_proba(audio, config):
     # spectogram image.
     hop_length = int(sr * fd) // int(fhf)
     n_vad_frames = math.ceil(len(audio) / hop_length)
-    vad_frames = [audio[k * hop_length : (k + int(fhf)) * hop_length]
+    vad_frames = [audio[k * hop_length: (k + int(fhf)) * hop_length]
                   for k in range(n_vad_frames)]
 
     # "mvf" is "micro vad frame" ... 30 msec long segment of vad frame.
@@ -236,7 +236,7 @@ def sound_event_proba(audio, config):
         soundfile.write(buf, frame, sr, 'PCM_16', format='RAW')
 
         n_mvf = int(len(buf.getvalue()) / bytes_per_mvf)
-        segments = [buf.getvalue()[k * bytes_per_mvf : (k + 1) * bytes_per_mvf]
+        segments = [buf.getvalue()[k * bytes_per_mvf: (k + 1) * bytes_per_mvf]
                     for k in range(n_mvf)]
         assert segments, len(frame)
 

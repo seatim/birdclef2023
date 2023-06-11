@@ -140,7 +140,8 @@ def center_median(x):
         raise ValueError('max value of input must be between 0 and 1')
 
     median = np.median(x)
-    return np.where(x < median, x*(0.5/median), 0.5+(x-median)*(0.5/(1-median)))
+    return np.where(x < median, x*(0.5/median),
+                    0.5+(x-median)*(0.5/(1-median)))
 
 
 def clip_tails(x, n_std=3):

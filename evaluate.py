@@ -32,7 +32,8 @@ DEFAULT_PREDS_DIR = 'data/preds'
 
 
 def get_model_version(path):
-    match = re.match('birdclef-model-((pretrain-)?\d+.\d+).pkl$', basename(path))
+    pattern = r'birdclef-model-((pretrain-)?\d+.\d+).pkl$'
+    match = re.match(pattern, basename(path))
     if match:
         return match.groups()[0]
 
@@ -157,7 +158,8 @@ class EnsembleLearner:
         if self.efficient:
             preds = self._efficient_batch_preds(dl)
         else:
-            preds = [self._batch_predict(dl, k) for k in range(len(self.learners))]
+            preds = [self._batch_predict(dl, k)
+                     for k in range(len(self.learners))]
 
         for pred in preds[1:]:
             for pred_i, pred_j in zip(pred, preds[0]):
@@ -320,7 +322,8 @@ def main(model_path, audio_dir, quick, quicker, save_preds, val_dir, preds_dir,
         y_index = list(classes).index(y)
 
         if path.endswith('.ogg'):
-            images = get_images_from_audio(path, quick, quicker, config, resize)
+            images = get_images_from_audio(
+                path, quick, quicker, config, resize)
         else:
             images = [load_image(path)]
 

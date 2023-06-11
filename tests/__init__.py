@@ -13,7 +13,7 @@ def run_main(main, args):
             except SystemExit as e:
                 if isinstance(e.args[0], str):
                     raise
-    except:
+    except Exception:
         print(f.getvalue())
         raise
 
@@ -26,7 +26,7 @@ def capture_stdout(func, *args, **kwargs):
     try:
         with contextlib.redirect_stdout(f):
             func(*args, **kwargs)
-    except:
+    except Exception:
         print(f.getvalue())
         raise
 

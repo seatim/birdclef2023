@@ -47,4 +47,5 @@ class Test_make_images_from_audio(MaskWarnings):
 
             for name, files in expected_files.items():
                 if files is not None:
-                    self.assertEqual(set(os.listdir(join(dir_, name))), set(files))
+                    self.assertEqual(
+                        set(os.listdir(join(dir_, name))), set(files))

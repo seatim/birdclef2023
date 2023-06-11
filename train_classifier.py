@@ -53,7 +53,7 @@ def create_combined_images_dir(cfg, dry_run=False):
     cmd(f'mkdir -p {path}')
     print()
     print('Removing all images from combined images directory...')
-    cmd(f'find {path} -name \*.png -delete')
+    cmd(f'find {path} -name \\*.png -delete')
     print()
 
     if cfg.bc23_images_dir:
@@ -126,7 +126,8 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
     batch_tfms = [Brightness(cfg.max_lighting), Contrast(cfg.max_lighting),
                   HTrans(cfg.max_htrans), RandomErasing()]
 
-    dblock = DataBlock(blocks=(ImageBlock(img_cls), CategoryBlock(vocab=vocab)),
+    dblock = DataBlock(blocks=(ImageBlock(img_cls),
+                               CategoryBlock(vocab=vocab)),
                        get_items=get_image_files,
                        splitter=splitter,
                        get_y=parent_label,
@@ -150,7 +151,8 @@ def get_data_loader(vocab, cfg, random_split, show_batch=False,
               show_default=True)
 @click.option('-I', '--combined-images-dir',
               default=TrainConfig.combined_images_dir, show_default=True)
-@click.option('-e', '--epochs', default=TrainConfig.n_epochs, show_default=True)
+@click.option('-e', '--epochs', default=TrainConfig.n_epochs,
+              show_default=True)
 @click.option('-C', '--cpu', is_flag=True)
 @click.option('-r', '--random-split', is_flag=True)
 @click.option('-p', '--prune-missing-classes', is_flag=True)

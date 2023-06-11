@@ -32,7 +32,7 @@ def make_pretrain_learner(pre_learn, dls, metrics, normalize=True,
                           loss_func=None, opt_func=Adam,
                           lr=learner_defaults.lr, cbs=None, path=None,
                           model_dir='models', wd=None, wd_bn_bias=False,
-                          train_bn=True, moms=(0.95,0.85,0.95)):
+                          train_bn=True, moms=(0.95, 0.85, 0.95)):
 
     """Create a `fastai.learner.Learner` using ``pre_learn`` as a template.
     The body of ``pre_learn``'s model is retained and a new head is created
@@ -51,8 +51,8 @@ def make_pretrain_learner(pre_learn, dls, metrics, normalize=True,
     """
     arch = pre_learn.arch
     pretrained = True
-    assert pre_learn.pretrained == True, pre_learn.pretrained
-    assert pre_learn.normalize == True, pre_learn.normalize
+    assert pre_learn.pretrained is True, pre_learn.pretrained
+    assert pre_learn.normalize is True, pre_learn.normalize
 
     n_out = get_c(dls)
     body = pre_learn.model[0]

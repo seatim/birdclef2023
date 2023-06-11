@@ -72,9 +72,9 @@ class Test_images_from_audio(MaskWarnings):
         imgs = np.array(images_from_audio(TEST_AUDIO_PATH, self.config))
         img_width = self.config.image_width(TEST_AUDIO_PLAY_TIME)
         expected_n_imgs = math.ceil(img_width / self.config.frame_hop_length)
-
-        self.assertEqual(imgs.shape,
-            (expected_n_imgs, self.config.n_mels, self.config.frame_width))
+        expected_shape = (expected_n_imgs, self.config.n_mels,
+                          self.config.frame_width)
+        self.assertEqual(imgs.shape, expected_shape)
 
     def test_bad_frame_hop_length(self):
         with self.assertRaises(ValueError):
