@@ -148,12 +148,12 @@ def report_sweeps(df, bc23_classes, do_bc23, best_ap_score, best_ap_score_b,
         y_pred, ap_score, ks, 'k', top_k_filter, 'top-k filter',
         best_ap_score, verbose)
 
-    ftps = list(reversed((1e-7, 1e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3)))
+    ftps = (1e-7, 1e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3)
     sweep_preds_AP_score(
         y_pred, ap_score, ftps, 'p', fine_filter, 'fine filter',
         best_ap_score, verbose)
 
-    mfps = list(reversed([0.01 * x for x in range(1, 11)]))
+    mfps = [0.01 * x for x in range(1, 11)]
     sweep_preds_AP_score(
         y_pred, ap_score, mfps, 'p', max_filter, 'max filter', best_ap_score,
         verbose)
