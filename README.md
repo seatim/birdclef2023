@@ -5,7 +5,7 @@
 
 # birdclef2023
 
-Python package and programs for training classification models for the
+Python package and programs for developing classification models for the
 [BirdCLEF 2023](https://www.kaggle.com/competitions/birdclef-2023) coding
 competition.
 
@@ -31,9 +31,6 @@ Install dependencies:
 
     pip install -r requirements.txt
 
-Note, the `adak` package is not currently installable.  You can either run the
-programs from this directory or use `PYTHONPATH`.
-
 ### Data
 
 Join the competition to get access to the data, then unpack it into the
@@ -47,6 +44,12 @@ If using these datasets, unpack them to the `data/birdclef-2021` and
 `data/birdclef-2022` directories.
 
 ## 📚 Usage
+
+### Use without installing
+
+The software in this repo can be used directly without being installed.  You
+can either run the programs from this directory or point `PYTHONPATH` to this
+directory and run the programs from anywhere.
 
 ### Make images
 
@@ -68,7 +71,9 @@ previous example, run this command:
 
     python train_classifier.py -i data/train_images.m5.M5/ -B '' -D ''
 
-Note, the training program will copy images from the input sets into a
+### Combined directory
+
+The training program will copy images from the input training sets into a
 "combined" directory, which is located at `data/train_images.combined` by
 default.  The model produced by the training will be saved to this directory
 also.
@@ -77,27 +82,27 @@ also.
 
 Use `evaluate.py` to evaluate a classifier.  `evaluate.py` reads file names
 from standard input, uses a given model to classify each image, and outputs
-performance metrics.  Note that the class label of each image file is given
-by its parent directory.
+performance metrics.
 
 For example, to evaluate a classifier on the validation set created earlier,
 run this bash command:
 
     find val_images.m5.M5/ -type f | python evaluate.py PATH_TO_MODEL
 
-Note, the predictions made by the classifier can be saved to a file for later
+The predictions made by the classifier can be saved to a file for later
 analysis using the `--save-preds` (`-s`) option.  For example:
 
-    find val_images.m5.M5/ -type f | python evaluate.py PATH_TO_MODEL -s test1.csv
+    find val_images.m5.M5/ -type f | python evaluate.py PATH_TO_MODEL -s preds.csv
 
 ### Analyze predictions
 
 Use `analyze_preds.py` to gain additional insights about classifier
 performance.
 
-Example:
+For example, to show some statistics of the predictions, use the `--show-stats`
+(`-s`) option:
 
-    python analyze_preds.py test1.csv
+    python analyze_preds.py -s PREDS_FILE
 
 To see a full list of analysis options, run this command:
 
@@ -109,7 +114,7 @@ Install test dependencies:
 
     pip install -r tests/requirements.txt
 
-To run unit tests:
+To run tests:
 
     python -m unittest
 
