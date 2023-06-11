@@ -120,11 +120,7 @@ To run tests:
 
 ## License
 
-[XC503001](https://xeno-canto.org/503001) by [Dawie de Swardt](
-https://xeno-canto.org/contributor/JDCTKFMBKV)
-and [XC390820](https://xeno-canto.org/390820) by [Tieme](
-https://xeno-canto.org/contributor/OUZGUMHSWU) have been transcoded to [Ogg](
-https://en.wikipedia.org/wiki/Ogg) format and are redistributed under the
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license.
+See [train_metadata.csv](tests/data/train_metadata.csv) for license and
+attribution of audio files.
 
 All other files are released under the MIT License.  See LICENSE file.
