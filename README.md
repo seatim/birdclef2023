@@ -13,7 +13,7 @@ competition.
 https://github.com/seatim/birdclef2023/actions/workflows/adak-ci.yml/badge.svg)](
 https://github.com/seatim/birdclef2023/actions/workflows/adak-ci.yml)
 
-## Setup
+## 🛠 Setup
 
 ### Code
 
@@ -46,7 +46,7 @@ This code supports training on the data used in prior years' competitions, i.e.
 If using these datasets, unpack them to the `data/birdclef-2021` and
 `data/birdclef-2022` directories.
 
-## Usage
+## 📚 Usage
 
 ### Make images
 
@@ -103,7 +103,7 @@ To see a full list of analysis options, run this command:
 
     python analyze_preds.py --help
 
-## Testing
+## 🚦 Testing
 
 Install test dependencies:
 
