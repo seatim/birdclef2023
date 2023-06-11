@@ -10,8 +10,9 @@ def run_main(main, args):
         with contextlib.redirect_stdout(f):
             try:
                 main(args)
-            except SystemExit:
-                pass
+            except SystemExit as e:
+                if isinstance(e.args[0], str):
+                    raise
     except:
         print(f.getvalue())
         raise
