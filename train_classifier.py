@@ -177,15 +177,15 @@ def main(exit_on_error, bc23_images_dir, bc21_images_dir,
     classes = set()
 
     if bc23_images_dir:
-        tmd = pd.read_csv(join(bc23_images_dir, '..', 'train_metadata.csv'))
+        tmd = pd.read_csv(join(bc23_images_dir, 'train_metadata.csv'))
         classes |= set(tmd.primary_label)
 
     if bc21_images_dir:
-        tmd21 = pd.read_csv(join(bc21_images_dir, '..', 'train_metadata.csv'))
+        tmd21 = pd.read_csv(join(bc21_images_dir, 'train_metadata.csv'))
         classes |= set(tmd21.primary_label)
 
     if bc22_images_dir:
-        tmd22 = pd.read_csv(join(bc22_images_dir, '..', 'train_metadata.csv'))
+        tmd22 = pd.read_csv(join(bc22_images_dir, 'train_metadata.csv'))
         classes |= set(tmd22.primary_label)
 
     config = TrainConfig.instance(
