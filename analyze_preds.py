@@ -19,6 +19,7 @@ import pandas as pd
 from fastai.data.all import parent_label
 from tabulate import tabulate
 
+from adak.config import BaseConfig
 from adak.evaluate import (avg_precision_over_subset, count_top_n,
                            slice_by_class_subset)
 from adak.filter import top_k_filter, fine_filter, max_filter
@@ -34,7 +35,7 @@ def short_name(row):
 
 
 def get_bc23_classes(path):
-    tmd = pd.read_csv(join(dirname(path), '..', 'train_metadata.csv'))
+    tmd = pd.read_csv(join(dirname(path), 'train_metadata.csv'))
     return set(tmd.primary_label)
 
 
@@ -273,7 +274,7 @@ def main(path, show_hist, show_stats, do_sweeps, do_class_stats, threshold,
 
     preds_path = path
     df = pd.read_csv(path, index_col=0)
-    bc23_classes = list(get_bc23_classes(path))
+    bc23_classes = list(get_bc23_classes(BaseConfig.audio_dir))
     if set(bc23_classes) - set(df.columns):
         if not skip_bc23_classes:
            sys.exit('E: missing bc23 classes.  To proceed with analysis '

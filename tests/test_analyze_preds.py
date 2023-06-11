@@ -8,12 +8,15 @@ from unittest.mock import patch
 
 import pandas as pd
 
+from adak.config import BaseConfig
 from analyze_preds import main as analyze_preds
 
 from . import run_main
 from .test_transform import MaskWarnings
 
-PREDS_PATH = join(dirname(__file__), 'data', 'preds', 'model-1.1-preds.csv')
+TEST_DATA_DIR = join(dirname(__file__), 'data')
+PREDS_PATH = join(TEST_DATA_DIR, 'preds', 'model-1.1-preds.csv')
+BaseConfig.audio_dir = join(TEST_DATA_DIR, 'train_audio')
 
 
 class Test_analyze_preds(MaskWarnings):
