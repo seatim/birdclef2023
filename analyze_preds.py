@@ -187,7 +187,7 @@ def show_dist(series, desc, show_hist):
     print(f'Statistics of {desc}')
     print()
     stats = series.describe()
-    print(tabulate([[int(stats[0])] + list(stats[1:])],
+    print(tabulate([[int(stats.iloc[0])] + list(stats.iloc[1:])],
                    headers=list(stats.index), floatfmt='.3f'))
     print()
 
